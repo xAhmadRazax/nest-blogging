@@ -4,10 +4,65 @@ import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { BlogsModule } from './blogs/blogs.module';
+import { TenantsModule } from './tenants/tenants.module';
+import { RolesModule } from './roles/roles.module';
+import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
+import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
+import { HttpExceptionFilter } from './filters/http.exception.filter';
+import { ConfigModule } from '@nestjs/config';
+import { jwtConfig } from './config/auth.config';
+import { DbModule } from './db/db.module';
+import { ClsModule } from 'nestjs-cls';
+import { ClsPluginTransactional } from '@nestjs-cls/transactional';
+import { TransactionalAdapterDrizzleOrm } from '@nestjs-cls/transactional-adapter-drizzle-orm';
+import { DB_PROVIDER } from './db/db.provider';
+import { appConfigSchema } from './config/config.types';
+import { JwtExceptionFilter } from './filters/jwt.exception.filter';
 
 @Module({
-  imports: [UsersModule, AuthModule, BlogsModule],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [jwtConfig],
+      validationSchema: appConfigSchema,
+    }),
+    DbModule,
+    ClsModule.forRoot({
+      global: true,
+      plugins: [
+        new ClsPluginTransactional({
+          imports: [DbModule],
+          adapter: new TransactionalAdapterDrizzleOrm({
+            drizzleInstanceToken: DB_PROVIDER,
+          }),
+        }),
+      ],
+    }),
+    UsersModule,
+    AuthModule,
+    BlogsModule,
+    TenantsModule,
+    RolesModule,
+  ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_PIPE,
+      useClass: ZodValidationPipe,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ZodSerializerInterceptor,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: HttpExceptionFilter,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: JwtExceptionFilter,
+    },
+  ],
 })
 export class AppModule {}

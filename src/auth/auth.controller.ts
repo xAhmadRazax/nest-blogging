@@ -1,15 +1,56 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Req,
+} from '@nestjs/common';
+import type { Request } from 'express';
 import { AuthService } from './auth.service';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+import { RegisterUserDto } from './dto/register-user.dto';
+import { LoginUserDto } from './dto/login-user.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post()
-  create(@Body() createAuthDto: CreateAuthDto) {
-    return this.authService.create(createAuthDto);
+  @Post('/register')
+  register(@Body() registerUserDto: RegisterUserDto) {
+    return this.authService.register(registerUserDto);
+  }
+
+  @Post('/login')
+  async login(@Req() req: Request, @Body() loginUserDto: LoginUserDto) {
+    const user = await this.authService.login(loginUserDto);
+
+    // user response
+    /*{
+  accessToken: "jwt-token",
+  
+  user: {
+    id: "user-id",
+    username: "gintoki",
+    email: "gintoki@mail.com"
+  },
+
+  organizations: [
+    {
+      id: "org-1",
+      name: "Anthropy",
+      role: "owner",
+      permissions: ["delete_post", "publish_post", "manage_members"]
+    },
+    {
+      id: "org-2",
+      name: "OpenBlog",
+      role: "member",
+      permissions: ["create_post"]
+    }
+  ]
+} */
   }
 
   @Get()
@@ -22,10 +63,10 @@ export class AuthController {
     return this.authService.findOne(+id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAuthDto: UpdateAuthDto) {
-    return this.authService.update(+id, updateAuthDto);
-  }
+  // @Patch(':id')
+  // update(@Param('id') id: string, @Body() updateAuthDto: UpdateAuthDto) {
+  //   return this.authService.update(+id, updateAuthDto);
+  // }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
