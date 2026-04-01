@@ -7,11 +7,19 @@ import {
   Param,
   Delete,
   Req,
+  HttpCode,
+  Res,
 } from '@nestjs/common';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
+import { UserMeta } from './decorators/user-meta.decorator';
+import type { TypeUserMeta } from './types/auth.type';
+import {
+  accessTokenCookieOptions,
+  refreshTokenCookieOptions,
+} from './constants/cookie.options';
 
 @Controller('auth')
 export class AuthController {
@@ -23,9 +31,20 @@ export class AuthController {
   }
 
   @Post('/login')
-  async login(@Req() req: Request, @Body() loginUserDto: LoginUserDto) {
-    const user = await this.authService.login(loginUserDto);
+  @HttpCode(200)
+  async login(
+    @UserMeta() meta: TypeUserMeta,
+    @Body() loginUserDto: LoginUserDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { user, accessToken, refreshToken } = await this.authService.login(
+      meta,
+      loginUserDto,
+    );
 
+    res.cookie(accessToken, accessTokenCookieOptions);
+    res.cookie(refreshToken, refreshTokenCookieOptions);
+    return { user, accessToken, refreshToken };
     // user response
     /*{
   accessToken: "jwt-token",

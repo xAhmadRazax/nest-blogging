@@ -1,40 +1,67 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { UsersService } from 'src/users/users.service';
-import argon2 from 'argon2';
 import { LoginUserDto } from './dto/login-user.dto';
+import { TokenService } from './token.service';
+import { TypeUserMeta } from './types/auth.type';
+import { SessionService } from './session.service';
+import { HashingService } from './hashing.service';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly userService: UsersService,
     private readonly logger: Logger,
+    private readonly userService: UsersService,
+    private readonly tokenService: TokenService,
+    private readonly sessionsService: SessionService,
+    private readonly hashingService: HashingService,
   ) {}
 
   async register(registerUserDto: RegisterUserDto) {
-    const hashedPassword = await this.hashPassword(registerUserDto.password);
+    const hashedPassword = await this.hashingService.hashPassword(
+      registerUserDto.password,
+    );
     const user = await this.userService.create({
       ...registerUserDto,
       hashedPassword,
     });
+    this.logger.log(`A user with ${user.email} has been registered`);
     return user;
   }
 
-  async login(loginUserDto: LoginUserDto) {
+  async login(userMeta: TypeUserMeta, loginUserDto: LoginUserDto) {
     const user = await this.userService.findOneByEmail(loginUserDto.email);
     if (
       !user ||
-      !(await this.comparePassword(loginUserDto.password, user.hashedPassword))
+      !(await this.hashingService.comparePassword(
+        loginUserDto.password,
+        user.hashedPassword,
+      ))
     ) {
+      this.logger.warn(
+        `Unauthorized access attempt by user ${loginUserDto.email}`,
+      );
       throw new UnauthorizedException('Invalid Credentials');
     }
 
-    return this.userService.sanitize(user);
+    // generate Session
+
+    const accessToken = this.tokenService.generateJwtToken(user.id);
+    const { selector, verifier, hashedVerifier } =
+      this.tokenService.generateRefreshTokenPair();
+
+    await this.sessionsService.create({
+      meta: userMeta,
+      tokenFamily: selector,
+      tokenHash: hashedVerifier,
+      userId: user.id,
+    });
+
+    return {
+      user: this.userService.sanitize(user),
+      accessToken,
+      refreshToken: `${selector}.${verifier}`,
+    };
   }
 
   findAll() {
@@ -51,27 +78,5 @@ export class AuthService {
 
   remove(id: number) {
     return `This action removes a #${id} auth`;
-  }
-
-  private async hashPassword(password: string) {
-    try {
-      const hashedPassword = await argon2.hash(password);
-      return hashedPassword;
-    } catch {
-      this.logger.error('argon2 has failed hashing');
-      throw new InternalServerErrorException('Failed to hash password');
-    }
-  }
-
-  private async comparePassword(
-    candidatePassword: string,
-    hashedPassword: string,
-  ) {
-    try {
-      return await argon2.verify(hashedPassword, candidatePassword);
-    } catch {
-      this.logger.error('argon2 has failed to verify password');
-      throw new InternalServerErrorException('Failed to verify password');
-    }
   }
 }

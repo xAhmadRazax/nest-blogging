@@ -18,8 +18,6 @@ export class UsersService {
       .values(createUserDto)
       .returning();
 
-    this.logger.log(`User with the email: ${user.email} has been created`);
-
     return this.sanitize(user);
   }
 
@@ -51,8 +49,9 @@ export class UsersService {
   }
 
   sanitize(user: User): PublicUser {
-    const { hashedPassword, ...publicUser } = user;
+    const { hashedPassword, passwordResetAt, ...publicUser } = user;
     void hashedPassword;
+    void passwordResetAt;
     return publicUser;
   }
 }

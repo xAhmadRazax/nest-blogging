@@ -15,6 +15,41 @@
       "when": 1774737213468,
       "tag": "0001_old_angel",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774911913190,
+      "tag": "0002_absurd_midnight",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1774912364252,
+      "tag": "0003_daily_exiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1774954705813,
+      "tag": "0004_futuristic_starjammers",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1774961023346,
+      "tag": "0005_chemical_rhino",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1774978950184,
+      "tag": "0006_mushy_orphan",
+      "breakpoints": true
     }
   ]
 }

@@ -8,7 +8,7 @@ import { TenantsModule } from './tenants/tenants.module';
 import { RolesModule } from './roles/roles.module';
 import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
-import { HttpExceptionFilter } from './filters/http.exception.filter';
+// import { HttpExceptionFilter } from './filters/http.exception.filter';
 import { ConfigModule } from '@nestjs/config';
 import { jwtConfig } from './config/auth.config';
 import { DbModule } from './db/db.module';
@@ -18,6 +18,8 @@ import { TransactionalAdapterDrizzleOrm } from '@nestjs-cls/transactional-adapte
 import { DB_PROVIDER } from './db/db.provider';
 import { appConfigSchema } from './config/config.types';
 import { JwtExceptionFilter } from './filters/jwt.exception.filter';
+import { DrizzleExceptionFilter } from './filters/drizzle.exception.filter';
+import { ZodExceptionFilter } from './filters/zod.exception.filter';
 
 @Module({
   imports: [
@@ -57,11 +59,15 @@ import { JwtExceptionFilter } from './filters/jwt.exception.filter';
     },
     {
       provide: APP_FILTER,
-      useClass: HttpExceptionFilter,
+      useClass: ZodExceptionFilter,
     },
     {
       provide: APP_FILTER,
       useClass: JwtExceptionFilter,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: DrizzleExceptionFilter,
     },
   ],
 })

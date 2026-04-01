@@ -9,9 +9,9 @@ import {
 
 export const users = pgTable('users', {
   id: uuid(`id`).defaultRandom().primaryKey(),
-  email: varchar('email', { length: 254 }).notNull(),
-  username: varchar('username', { length: 254 }).notNull().unique(),
-  hashedPassword: varchar('hashed_password', { length: 20 }).notNull(),
+  email: varchar('email', { length: 254 }).notNull().unique(),
+  username: varchar('username', { length: 254 }).notNull(),
+  hashedPassword: varchar('hashed_password').notNull(),
 
   avatar: text('text'),
 
@@ -33,4 +33,4 @@ export const users = pgTable('users', {
 
 export type User = typeof users.$inferSelect;
 
-export type PublicUser = Omit<User, 'hashedPassword'>;
+export type PublicUser = Omit<User, 'hashedPassword' | 'passwordResetAt'>;
