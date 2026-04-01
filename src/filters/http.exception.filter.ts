@@ -7,7 +7,7 @@ import { ZodError } from 'zod';
 @Catch(HttpException)
 export class HttpExceptionFilter extends BaseExceptionFilter {
   private readonly logger = new Logger(HttpExceptionFilter.name);
-
+  // TODO: align the zod error with currently errorObject
   catch(exception: HttpException, host: ArgumentsHost) {
     if (exception instanceof ZodSerializationException) {
       const zodError = exception.getZodError();
