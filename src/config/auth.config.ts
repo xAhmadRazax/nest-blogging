@@ -9,7 +9,7 @@ export interface AuthConfig {
     };
   };
   refreshToken: {
-    expiresIn: string;
+    expiresIn: StringValue;
   };
 }
 
@@ -23,7 +23,7 @@ export const jwtConfig = registerAs(
       },
     },
     refreshToken: {
-      expiresIn: process.env.REFRESH_TOKEN_EXPIRY!,
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRY as StringValue,
     },
   }),
 );
