@@ -17,7 +17,7 @@ export const users = pgTable('users', {
 
   //   meta info
   isVerified: boolean('is_verified').default(false),
-  passwordResetAt: timestamp('password_reset_at', {
+  passwordChangedAt: timestamp('password_changed_at', {
     withTimezone: true,
     mode: 'date',
   }),
@@ -33,4 +33,4 @@ export const users = pgTable('users', {
 
 export type User = typeof users.$inferSelect;
 
-export type PublicUser = Omit<User, 'hashedPassword' | 'passwordResetAt'>;
+export type PublicUser = Omit<User, 'hashedPassword' | 'passwordChangedAt'>;
