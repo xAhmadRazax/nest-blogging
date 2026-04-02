@@ -27,7 +27,7 @@ export class DrizzleExceptionFilter implements ExceptionFilter {
     const errObj: ErrorResponse = {
       statusCode: 500,
       errorType: 'DB_ERR',
-      message: 'An unexpected database error occurred',
+      message: exception.message ?? 'An unexpected database error occurred',
       errors: [],
       timestamp: new Date().toISOString(),
     };
