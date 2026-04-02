@@ -1,10 +1,11 @@
-import { Logger } from '@nestjs/common';
+import { Logger, UnauthorizedException } from '@nestjs/common';
 import type { DB } from 'src/db/client';
 import { InjectDb } from 'src/db/db.provider';
 import { sessions } from './schemas/sessions.entity';
 import { TypeConfigService } from 'src/config/type.config.service';
 import ms from 'ms';
 import { TypeUserMeta } from './types/auth.type';
+import { and, eq } from 'drizzle-orm';
 
 export class SessionService {
   constructor(
@@ -41,5 +42,67 @@ export class SessionService {
       .returning();
 
     return session;
+  }
+
+  async sessionRotation(
+    {
+      meta,
+      tokenFamily,
+      tokenHash,
+      userId,
+    }: {
+      meta: TypeUserMeta;
+      tokenFamily: string;
+      tokenHash: string;
+      userId: string;
+    },
+    context: { url: string; email: string },
+  ) {
+    await this.db.transaction(async (tx) => {
+      const [session] = await tx
+        .select()
+        .from(sessions)
+        .where(
+          and(
+            eq(sessions.userId, userId),
+            eq(sessions.isUsed, false),
+            eq(sessions.isRevoked, false),
+          ),
+        );
+
+      if (!session.id) {
+        this.logger.warn({
+          errorType: 'INVALID_SESSION',
+          userId,
+          email: context.email,
+          path: context.url,
+        });
+        throw new UnauthorizedException('Invalid Session Please Login again');
+      }
+
+      const [updatedSession] = await this.db
+        .insert(sessions)
+        .values({
+          ...meta,
+          tokenFamily,
+          tokenHash,
+          userId,
+          expiresAt: new Date(
+            Date.now() +
+              ms(
+                this.configService.get('auth', { infer: true })!.refreshToken
+                  .expiresIn,
+              ),
+          ),
+        })
+        .returning();
+
+      await this.db
+        .update(sessions)
+        .set({ isUsed: true, replacedBy: updatedSession.id })
+        .where(eq(sessions.id, session.id));
+
+      return updatedSession;
+    });
   }
 }
