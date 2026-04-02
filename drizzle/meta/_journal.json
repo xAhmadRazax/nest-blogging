@@ -50,6 +50,13 @@
       "when": 1774978950184,
       "tag": "0006_mushy_orphan",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1775135326558,
+      "tag": "0007_chunky_zemo",
+      "breakpoints": true
     }
   ]
 }

@@ -23,3 +23,15 @@ Content-Type:{{content-type}}
     "email":"fake1@fake.com",
     "password":"Fake123*"
 }
+
+
+### change password 
+# @name change-password
+PATCH  {{baseUrl}}/auth/change-password
+Content-Type:{{content-type}}
+
+{
+      "password":"Fake123*",
+      "newPassword":"FakeFate123*"
+}
+

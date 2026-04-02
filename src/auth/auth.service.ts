@@ -6,6 +6,7 @@ import { TokenService } from './token.service';
 import { TypeUserMeta } from './types/auth.type';
 import { SessionService } from './session.service';
 import { HashingService } from './hashing.service';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -29,7 +30,11 @@ export class AuthService {
     return user;
   }
 
-  async login(userMeta: TypeUserMeta, loginUserDto: LoginUserDto) {
+  async login(
+    userMeta: TypeUserMeta,
+    loginUserDto: LoginUserDto,
+    context: { url: string },
+  ) {
     const user = await this.userService.findOneByEmail(loginUserDto.email);
     if (
       !user ||
@@ -38,15 +43,20 @@ export class AuthService {
         user.hashedPassword,
       ))
     ) {
-      this.logger.warn(
-        `Unauthorized access attempt by user ${loginUserDto.email}`,
-      );
+      this.logger.warn({
+        errorType: 'UNAUTHORIZED_USER_ACCESS',
+        email: loginUserDto.email,
+        path: context?.url,
+      });
       throw new UnauthorizedException('Invalid Credentials');
     }
 
     // generate Session
 
-    const accessToken = this.tokenService.generateJwtToken(user.id);
+    const accessToken = this.tokenService.generateJwtToken({
+      userId: user.id,
+      email: user.email,
+    });
     const { selector, verifier, hashedVerifier } =
       this.tokenService.generateRefreshTokenPair();
 
@@ -64,6 +74,55 @@ export class AuthService {
     };
   }
 
+  async changePassword(
+    { userId, email }: { userId: string; email: string },
+    changePasswordDto: ChangePasswordDto,
+    userMeta: TypeUserMeta,
+    context?: { url: string },
+  ) {
+    const user = await this.userService.findOne(userId);
+
+    if (
+      !user ||
+      !(await this.hashingService.comparePassword(
+        changePasswordDto.password,
+        user.hashedPassword,
+      ))
+    ) {
+      this.logger.warn({
+        errorType: 'UNAUTHORIZED_USER_ACCESS',
+        email,
+        userId,
+        path: context?.url,
+      });
+      throw new UnauthorizedException('Invalid Credentials');
+    }
+
+    const updatedUser = await this.userService.update(user.id, {
+      password: changePasswordDto.newPassword,
+      passwordChangedAt: new Date(),
+    });
+
+    const accessToken = this.tokenService.generateJwtToken({
+      userId: user.id,
+      email: user.email,
+    });
+    const { selector, verifier, hashedVerifier } =
+      this.tokenService.generateRefreshTokenPair();
+
+    await this.sessionsService.create({
+      meta: userMeta,
+      tokenFamily: selector,
+      tokenHash: hashedVerifier,
+      userId: user.id,
+    });
+
+    return {
+      user: this.userService.sanitize(updatedUser),
+      accessToken,
+      refreshToken: `${selector}.${verifier}`,
+    };
+  }
   findAll() {
     return `This action returns all auth`;
   }

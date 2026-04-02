@@ -6,8 +6,9 @@ import {
   Patch,
   Param,
   Delete,
-  Req,
   HttpCode,
+  UseGuards,
+  Req,
   Res,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
@@ -20,6 +21,10 @@ import {
   accessTokenCookieOptions,
   refreshTokenCookieOptions,
 } from './constants/cookie.options';
+import { AuthGuard } from 'src/common/guards/auth.guard';
+import { CurrentUser } from 'src/common/decorators/current-user.decorators';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import type { User } from 'src/db/schema';
 
 @Controller('auth')
 export class AuthController {
@@ -33,17 +38,19 @@ export class AuthController {
   @Post('/login')
   @HttpCode(200)
   async login(
+    @Res({ passthrough: true }) res: Response,
+    @Req() req: Request,
     @UserMeta() meta: TypeUserMeta,
     @Body() loginUserDto: LoginUserDto,
-    @Res({ passthrough: true }) res: Response,
   ) {
     const { user, accessToken, refreshToken } = await this.authService.login(
       meta,
       loginUserDto,
+      { url: req.url },
     );
 
-    res.cookie(accessToken, accessTokenCookieOptions);
-    res.cookie(refreshToken, refreshTokenCookieOptions);
+    res.cookie('accessToken', accessToken, accessTokenCookieOptions);
+    res.cookie('refreshToken', refreshToken, refreshTokenCookieOptions);
     return { user, accessToken, refreshToken };
     // user response
     /*{
@@ -72,14 +79,26 @@ export class AuthController {
 } */
   }
 
-  @Get()
-  findAll() {
-    return this.authService.findAll();
-  }
+  @Patch('/change-password')
+  @UseGuards(AuthGuard)
+  async changePassword(
+    @Res({ passthrough: true }) res: Response,
+    @Req() req: Request,
+    @CurrentUser() user: User,
+    @UserMeta() meta: TypeUserMeta,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ) {
+    const { accessToken, refreshToken } = await this.authService.changePassword(
+      { userId: user.id, email: user.email },
+      changePasswordDto,
+      meta,
+      { url: req.url },
+    );
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.authService.findOne(+id);
+    res.cookie('accessToken', accessToken, accessTokenCookieOptions);
+    res.cookie('refreshToken', refreshToken, refreshTokenCookieOptions);
+
+    return { user, accessToken, refreshToken };
   }
 
   // @Patch(':id')
