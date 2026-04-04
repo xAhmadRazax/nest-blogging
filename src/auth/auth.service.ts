@@ -155,6 +155,21 @@ export class AuthService {
     return passwordResetsRes;
   }
 
+  async verifyPasswordRestsToken(token: string, context: { url: string }) {
+    const hashedToken = this.hashingService.encryptCryptoToken(token);
+    const passwordResetsRecord = await this.passwordResetsService.find({
+      hashedToken,
+    });
+    if (!passwordResetsRecord) {
+      this.logger.warn({
+        errorType: 'EXPIRE_OR_INVALID_PASSWORD_RESET_TOKEN',
+        message: 'Token is invalid or has expired',
+        path: context.url,
+      });
+      throw new BadRequestException('Token is invalid or has expired');
+    }
+  }
+
   async resetsPassword(
     passwordResetsDto: PasswordResetsDto,
     token: string,

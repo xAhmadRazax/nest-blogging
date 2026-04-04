@@ -44,8 +44,15 @@ Content-Type:{{content-type}}
     "email":"fake1@fake.com"
 }
 
+
 ### setting restsPasswordUrl
  @passwordRestsUrls = {{forgotPassword.response.body.passwordResetUrl}}
+
+### verify password rests token
+# @name verify-password-rests
+GET {{baseUrl}}/auth/verify-password-rests-token/563f13e9e73de8050b5eb1840e28f3a2ce727d94da9d0decee553f59cbc03da9
+Content-Type:{{content-type}}
+
 
 ### resets Password
 # @name password-rests

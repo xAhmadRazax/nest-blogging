@@ -10,6 +10,7 @@ import {
   Req,
   Res,
   BadRequestException,
+  Get,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
@@ -124,6 +125,15 @@ export class AuthController {
     };
   }
 
+  @Get('/verify-password-rests-token/:token')
+  @HttpCode(204)
+  async verifyPasswordResetsToken(
+    @Req() req: Request,
+    @Param('token') token: string,
+  ) {
+    await this.authService.verifyPasswordRestsToken(token, { url: req.url });
+  }
+
   @Patch('/password-rests/:token')
   @HttpCode(204)
   async passwordRests(
@@ -138,6 +148,9 @@ export class AuthController {
       url: req.url,
     });
   }
+
+  @Patch('/password-verify')
+  verifyEmail() {}
 
   @Delete(':id')
   remove() {}
