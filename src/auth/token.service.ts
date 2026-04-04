@@ -24,7 +24,7 @@ export class TokenService {
 
   generateRefreshTokenPair() {
     const selector = this.hashingService.generateCryptoToken({
-      generateUUID: true,
+      byteLength: 16,
     });
     const verifier = this.hashingService.generateCryptoToken();
     const hashedVerifier = this.hashingService.encryptCryptoToken(verifier);

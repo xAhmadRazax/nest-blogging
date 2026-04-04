@@ -21,7 +21,7 @@ Content-Type:{{content-type}}
 
 {
     "email":"fake1@fake.com",
-    "password":"Fake123*"
+    "password":"FakeFate123*"
 }
 
 
@@ -35,3 +35,23 @@ Content-Type:{{content-type}}
       "newPassword":"FakeFate123*"
 }
 
+### forgot Password
+# @name forgotPassword
+POST  {{baseUrl}}/auth/forgot-password
+Content-Type:{{content-type}}
+
+{
+    "email":"fake1@fake.com"
+}
+
+### setting restsPasswordUrl
+ @passwordRestsUrls = {{forgotPassword.response.body.passwordResetUrl}}
+
+### resets Password
+# @name password-rests
+PATCH {{passwordRestsUrls}}
+Content-Type:{{content-type}}
+
+{
+     "password":"Fate123*"
+}

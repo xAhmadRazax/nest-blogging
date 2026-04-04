@@ -8,6 +8,7 @@ import { TypeConfigService } from 'src/config/type.config.service';
 import { TokenService } from './token.service';
 import { HashingService } from './hashing.service';
 import { SessionService } from './session.service';
+import { PasswordResetsService } from './password-resets.service';
 
 @Module({
   imports: [
@@ -25,8 +26,9 @@ import { SessionService } from './session.service';
     TokenService,
     HashingService,
     SessionService,
-    Logger,
+    PasswordResetsService,
     TypeConfigService,
+    Logger,
   ],
   controllers: [AuthController],
 })

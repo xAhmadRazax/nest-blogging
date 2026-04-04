@@ -1,15 +1,15 @@
 import {
   Controller,
-  Get,
   Post,
   Body,
   Patch,
-  Param,
   Delete,
   HttpCode,
   UseGuards,
+  Param,
   Req,
   Res,
+  BadRequestException,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
@@ -25,6 +25,8 @@ import { AuthGuard } from 'src/common/guards/auth.guard';
 import { CurrentUser } from 'src/common/decorators/current-user.decorators';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import type { User } from 'src/db/schema';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { PasswordResetsDto } from './dto/password-resets.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -92,22 +94,51 @@ export class AuthController {
       { userId: user.id, email: user.email },
       changePasswordDto,
       meta,
-      { url: req.url },
+      { url: req.url, email: user.email },
     );
 
     res.cookie('accessToken', accessToken, accessTokenCookieOptions);
     res.cookie('refreshToken', refreshToken, refreshTokenCookieOptions);
 
-    return { user, accessToken, refreshToken };
+    return { accessToken, refreshToken };
   }
 
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateAuthDto: UpdateAuthDto) {
-  //   return this.authService.update(+id, updateAuthDto);
-  // }
+  @Post('/forgot-password')
+  @HttpCode(200)
+  async forgotPassword(
+    @Req() req: Request,
+    @Body() forgotPasswordDto: ForgotPasswordDto,
+  ) {
+    const forgotPasswordRes =
+      await this.authService.forgotPassword(forgotPasswordDto);
+
+    if (!forgotPasswordRes) {
+      return;
+    }
+    const url = `${req.protocol}://${req.get('host')}/api/v1/auth/password-rests/${forgotPasswordRes.passwordResetToken}`;
+
+    return {
+      passwordResetUrl: url,
+      validUpto: forgotPasswordRes.tokenValidUpTo,
+      maxLivedTime: forgotPasswordRes.livedTime,
+    };
+  }
+
+  @Patch('/password-rests/:token')
+  @HttpCode(204)
+  async passwordRests(
+    @Req() req: Request,
+    @Param('token') token: string,
+    @Body() passwordResetDto: PasswordResetsDto,
+  ) {
+    if (!token) {
+      throw new BadRequestException('Password rests token is required');
+    }
+    await this.authService.resetsPassword(passwordResetDto, token, {
+      url: req.url,
+    });
+  }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.authService.remove(+id);
-  }
+  remove() {}
 }

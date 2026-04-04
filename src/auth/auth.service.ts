@@ -1,4 +1,9 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { UsersService } from 'src/users/users.service';
 import { LoginUserDto } from './dto/login-user.dto';
@@ -7,15 +12,22 @@ import { TypeUserMeta } from './types/auth.type';
 import { SessionService } from './session.service';
 import { HashingService } from './hashing.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { PasswordResetsService } from './password-resets.service';
+import { PasswordResetsDto } from './dto/password-resets.dto';
+import { InjectDb } from 'src/db/db.provider';
+import { type DB } from 'src/db/client';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly logger: Logger,
+    @InjectDb() private readonly db: DB,
     private readonly userService: UsersService,
     private readonly tokenService: TokenService,
     private readonly sessionsService: SessionService,
     private readonly hashingService: HashingService,
+    private readonly passwordResetsService: PasswordResetsService,
+    private readonly logger: Logger,
   ) {}
 
   async register(registerUserDto: RegisterUserDto) {
@@ -78,7 +90,7 @@ export class AuthService {
     { userId, email }: { userId: string; email: string },
     changePasswordDto: ChangePasswordDto,
     userMeta: TypeUserMeta,
-    context?: { url: string },
+    context: { url: string; email: string },
   ) {
     const user = await this.userService.findOne(userId);
 
@@ -98,8 +110,12 @@ export class AuthService {
       throw new UnauthorizedException('Invalid Credentials');
     }
 
+    const hashedPassword = await this.hashingService.hashPassword(
+      changePasswordDto.newPassword,
+    );
+
     const updatedUser = await this.userService.update(user.id, {
-      password: changePasswordDto.newPassword,
+      hashedPassword,
       passwordChangedAt: new Date(),
     });
 
@@ -107,15 +123,17 @@ export class AuthService {
       userId: user.id,
       email: user.email,
     });
-    const { selector, verifier, hashedVerifier } =
+    const { selector, hashedVerifier, verifier } =
       this.tokenService.generateRefreshTokenPair();
 
-    await this.sessionsService.create({
-      meta: userMeta,
-      tokenFamily: selector,
-      tokenHash: hashedVerifier,
-      userId: user.id,
-    });
+    await this.sessionsService.sessionRotation(
+      {
+        meta: userMeta,
+        tokenHash: hashedVerifier,
+        userId: user.id,
+      },
+      context,
+    );
 
     return {
       user: this.userService.sanitize(updatedUser),
@@ -123,19 +141,55 @@ export class AuthService {
       refreshToken: `${selector}.${verifier}`,
     };
   }
-  findAll() {
-    return `This action returns all auth`;
+
+  async forgotPassword({ email }: ForgotPasswordDto) {
+    const user = await this.userService.findOneByEmail(email);
+    if (!user.id) {
+      return;
+    }
+
+    const passwordResetsRes = await this.passwordResetsService.create({
+      userId: user.id,
+    });
+
+    return passwordResetsRes;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
-  }
+  async resetsPassword(
+    passwordResetsDto: PasswordResetsDto,
+    token: string,
+    context: { url: string },
+  ) {
+    await this.db.transaction(async (tx) => {
+      const hashedToken = this.hashingService.encryptCryptoToken(token);
+      const passwordResetsRecord = await this.passwordResetsService.find({
+        transaction: tx,
+        hashedToken,
+      });
+      if (!passwordResetsRecord) {
+        this.logger.warn({
+          errorType: 'EXPIRE_OR_INVALID_PASSWORD_RESET_TOKEN',
+          message: 'Token is invalid or has expired',
+          path: context.url,
+        });
+        throw new BadRequestException('Token is invalid or has expired');
+      }
 
-  // update(id: number, updateAuthDto: UpdateAuthDto) {
-  //   return `This action updates a #${id} auth`;
-  // }
+      const hashedPassword = await this.hashingService.hashPassword(
+        passwordResetsDto.password,
+      );
 
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+      const user = await this.userService.update(
+        passwordResetsRecord.userId,
+        {
+          hashedPassword,
+          passwordChangedAt: new Date(),
+        },
+        tx,
+      );
+      await this.passwordResetsService.update(hashedToken);
+
+      return this.userService.sanitize(user);
+    });
   }
 }

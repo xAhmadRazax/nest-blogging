@@ -1,7 +1,7 @@
 import { Logger, UnauthorizedException } from '@nestjs/common';
 import type { DB } from 'src/db/client';
 import { InjectDb } from 'src/db/db.provider';
-import { sessions } from './schemas/sessions.entity';
+import { sessions } from './schemas/sessions.schema';
 import { TypeConfigService } from 'src/config/type.config.service';
 import ms from 'ms';
 import { TypeUserMeta } from './types/auth.type';
@@ -34,8 +34,8 @@ export class SessionService {
         expiresAt: new Date(
           Date.now() +
             ms(
-              this.configService.get('auth', { infer: true })!.refreshToken
-                .expiresIn,
+              this.configService.get('auth', { infer: true })!.tokensExpiry
+                .refreshTokenExpiry,
             ),
         ),
       })
@@ -47,12 +47,10 @@ export class SessionService {
   async sessionRotation(
     {
       meta,
-      tokenFamily,
       tokenHash,
       userId,
     }: {
       meta: TypeUserMeta;
-      tokenFamily: string;
       tokenHash: string;
       userId: string;
     },
@@ -84,14 +82,14 @@ export class SessionService {
         .insert(sessions)
         .values({
           ...meta,
-          tokenFamily,
+          tokenFamily: session.tokenFamily,
           tokenHash,
           userId,
           expiresAt: new Date(
             Date.now() +
               ms(
-                this.configService.get('auth', { infer: true })!.refreshToken
-                  .expiresIn,
+                this.configService.get('auth', { infer: true })!.tokensExpiry
+                  .refreshTokenExpiry,
               ),
           ),
         })

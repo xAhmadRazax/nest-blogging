@@ -11,4 +11,6 @@ export const appConfigSchema = Joi.object({
   NODE_ENV: Joi.string().required(),
   JWT_EXPIRY: Joi.string().required(),
   REFRESH_TOKEN_EXPIRY: Joi.string().required(),
+  EMAIL_VERIFICATION_TOKEN_EXPIRY: Joi.string().required(),
+  PASSWORD_RESET_TOKEN_EXPIRY: Joi.string().required(),
 });

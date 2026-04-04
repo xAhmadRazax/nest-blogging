@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 // import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectDb } from 'src/db/db.provider';
-import type { DB } from 'src/db/client';
+import type { DB, Transaction } from 'src/db/client';
 import { PublicUser, User, users } from './schemas/users.schema';
 import { eq } from 'drizzle-orm';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -49,8 +49,9 @@ export class UsersService {
     return user;
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto) {
-    const [updatedUser] = await this.db
+  async update(id: string, updateUserDto: UpdateUserDto, tx?: Transaction) {
+    const queryBuilding = tx ? tx : this.db;
+    const [updatedUser] = await queryBuilding
       .update(users)
       .set(updateUserDto)
       .where(eq(users.id, id))
