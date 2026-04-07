@@ -21,7 +21,7 @@ Content-Type:{{content-type}}
 
 {
     "email":"muhammad.ahmad.raza789@gmail.com",
-    "password":"FakeFate123*"
+    "password":"Fake123*"
 }
 
 
@@ -32,7 +32,7 @@ Content-Type:{{content-type}}
 
 {
       "password":"Fake123*",
-      "newPassword":"FakeFate123*"
+      "newPassword":"Fake123*"
 }
 
 ### forgot Password
@@ -56,7 +56,6 @@ Content-Type:{{content-type}}
 # @name password-rests
 PATCH {{baseUrl}}/auth/password-resets/be154b713412bf166667be57c9ae676730a29dc77e1f7dbae6fcadcc05905d2f
 Content-Type:{{content-type}}
-
 {
      "password":"FakeFate123*"
 }
@@ -70,3 +69,15 @@ POST {{baseUrl}}/auth/email-verification
 ### verify user email
 # @name verifyEmail
 PATCH {{baseUrl}}/auth/email-verification/27d0402957a37987425f70cf392262788322cbfb7e111e1918d19d51a7c58e2d
+
+
+### refreshToken
+# @name refreshToken
+
+POST  {{baseUrl}}/auth/refresh-token
+
+
+### logout
+# @name logout
+
+Post {{baseUrl}}/auth/logout

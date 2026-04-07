@@ -3,7 +3,6 @@ import {
   Post,
   Body,
   Patch,
-  Delete,
   HttpCode,
   UseGuards,
   Param,
@@ -28,6 +27,8 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import type { User } from 'src/db/schema';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { PasswordResetsDto } from './dto/password-resets.dto';
+import { RefreshGuard } from './guard/refresh.guard';
+import { CurrentSession } from './decorators/current-session.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -86,18 +87,33 @@ export class AuthController {
 
   @Patch('/change-password')
   @UseGuards(AuthGuard)
+  @UseGuards(RefreshGuard)
   async changePassword(
     @Res({ passthrough: true }) res: Response,
     @Req() req: Request,
     @CurrentUser() user: User,
     @UserMeta() meta: TypeUserMeta,
+    @CurrentSession()
+    sessions: {
+      selector: string;
+      verifier: string;
+      hashedVerifier: string;
+    },
     @Body() changePasswordDto: ChangePasswordDto,
   ) {
+    function clearCookies() {
+      res.clearCookie('accessToken', accessTokenCookieOptions);
+      res.clearCookie('refreshToken', refreshTokenCookieOptions);
+    }
     const { accessToken, refreshToken } = await this.authService.changePassword(
       { userId: user.id, email: user.email },
       changePasswordDto,
       meta,
       { url: req.url, email: user.email },
+      {
+        ...sessions,
+      },
+      clearCookies,
     );
 
     res.cookie('accessToken', accessToken, accessTokenCookieOptions);
@@ -156,6 +172,49 @@ export class AuthController {
     await this.authService.verifyEmail(token);
   }
 
-  @Delete(':id')
-  remove() {}
+  @Post('/refresh-token')
+  @UseGuards(RefreshGuard)
+  async refreshToken(
+    @Res({ passthrough: true }) res: Response,
+    @UserMeta() meta: TypeUserMeta,
+    @CurrentSession()
+    sessions: {
+      selector: string;
+      verifier: string;
+      hashedVerifier: string;
+    },
+  ) {
+    function clearCookies() {
+      res.clearCookie('accessToken', accessTokenCookieOptions);
+      res.clearCookie('refreshToken', refreshTokenCookieOptions);
+    }
+
+    const { accessToken, refreshToken } =
+      await this.authService.refreshRotation(
+        {
+          ...sessions,
+          userMeta: meta,
+        },
+        clearCookies,
+      );
+    res.cookie('accessToken', accessToken, accessTokenCookieOptions);
+    res.cookie('refreshToken', refreshToken, refreshTokenCookieOptions);
+    return { accessToken, refreshToken };
+  }
+
+  @Post('/logout')
+  @UseGuards(RefreshGuard)
+  @HttpCode(204)
+  async logout(
+    @Res({ passthrough: true })
+    res: Response,
+    @CurrentSession()
+    sessions: {
+      selector: string;
+    },
+  ) {
+    await this.authService.logout(sessions.selector);
+    res.clearCookie('accessToken', accessTokenCookieOptions);
+    res.clearCookie('refreshToken', refreshTokenCookieOptions);
+  }
 }

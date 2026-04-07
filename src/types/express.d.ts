@@ -6,6 +6,7 @@ declare global {
   namespace Express {
     interface Request {
       user?: User;
+      session: { selector: string; verifier: string; hashedVerifier: string };
     }
   }
 }

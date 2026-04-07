@@ -103,55 +103,72 @@ export class AuthService {
     changePasswordDto: ChangePasswordDto,
     userMeta: TypeUserMeta,
     context: { url: string; email: string },
+    refreshToken: { selector: string; hashedVerifier: string },
+    resetCookieHandler: () => void,
   ) {
-    const user = await this.userService.findOne(userId);
+    return await this.db.transaction(async (tx) => {
+      const user = await this.userService.findOne(userId, tx);
 
-    if (
-      !user ||
-      !(await this.hashingService.comparePassword(
-        changePasswordDto.password,
-        user.hashedPassword,
-      ))
-    ) {
-      this.logger.warn({
-        errorType: 'UNAUTHORIZED_USER_ACCESS',
-        email,
-        userId,
-        path: context?.url,
+      if (
+        !user ||
+        !(await this.hashingService.comparePassword(
+          changePasswordDto.password,
+          user.hashedPassword,
+        ))
+      ) {
+        this.logger.warn({
+          errorType: 'UNAUTHORIZED_USER_ACCESS',
+          email,
+          userId,
+          path: context?.url,
+        });
+        throw new UnauthorizedException('Invalid Credentials');
+      }
+      const session = await this.sessionsService.findValidSession(
+        {
+          tokenFamily: refreshToken.selector,
+          hashedVerifier: refreshToken.hashedVerifier,
+        },
+        tx,
+        resetCookieHandler,
+      );
+
+      const hashedPassword = await this.hashingService.hashPassword(
+        changePasswordDto.newPassword,
+      );
+
+      const updatedUser = await this.userService.update(
+        user.id,
+        {
+          hashedPassword,
+          // Fix: Add 2-second buffer to passwordChangedAt to ensure it's always less than JWT iat,
+          // preventing false-positive token invalidations in the auth guard.
+          passwordChangedAt: new Date(Date.now() - 2000),
+        },
+        tx,
+      );
+
+      const accessToken = this.tokenService.generateJwtToken({
+        userId: user.id,
+        email: user.email,
       });
-      throw new UnauthorizedException('Invalid Credentials');
-    }
 
-    const hashedPassword = await this.hashingService.hashPassword(
-      changePasswordDto.newPassword,
-    );
+      const { hashedVerifier, verifier } =
+        this.tokenService.generateRefreshTokenPair();
 
-    const updatedUser = await this.userService.update(user.id, {
-      hashedPassword,
-      passwordChangedAt: new Date(),
-    });
-
-    const accessToken = this.tokenService.generateJwtToken({
-      userId: user.id,
-      email: user.email,
-    });
-    const { selector, hashedVerifier, verifier } =
-      this.tokenService.generateRefreshTokenPair();
-
-    await this.sessionsService.sessionRotation(
-      {
+      await this.sessionsService.sessionRotation({
         meta: userMeta,
         tokenHash: hashedVerifier,
-        userId: user.id,
-      },
-      context,
-    );
+        sessionRec: session,
+        tx,
+      });
 
-    return {
-      user: this.userService.sanitize(updatedUser),
-      accessToken,
-      refreshToken: `${selector}.${verifier}`,
-    };
+      return {
+        user: this.userService.sanitize(updatedUser),
+        accessToken,
+        refreshToken: `${refreshToken.selector}.${verifier}`,
+      };
+    });
   }
 
   async forgotPassword(
@@ -252,5 +269,51 @@ export class AuthService {
       );
       await this.emailVerificationService.verifyEmail(token, tx);
     });
+  }
+
+  async refreshRotation(
+    {
+      selector,
+      hashedVerifier,
+      userMeta,
+    }: {
+      selector: string;
+      userMeta: TypeUserMeta;
+      hashedVerifier: string;
+    },
+    resetCookieHandler: () => void,
+  ) {
+    return await this.db.transaction(async (tx) => {
+      const session = await this.sessionsService.findValidSession(
+        {
+          tokenFamily: selector,
+          hashedVerifier: hashedVerifier,
+        },
+        tx,
+        resetCookieHandler,
+      );
+
+      const user = await this.userService.findOne(session.userId, tx);
+      const accessToken = this.tokenService.generateJwtToken({
+        userId: user.id,
+        email: user.email,
+      });
+      const updatedTokenPairs = this.tokenService.generateRefreshTokenPair();
+
+      await this.sessionsService.sessionRotation({
+        meta: userMeta,
+        tokenHash: updatedTokenPairs.hashedVerifier,
+        sessionRec: session,
+        tx,
+      });
+      return {
+        accessToken,
+        refreshToken: `${selector}.${updatedTokenPairs.verifier}`,
+      };
+    });
+  }
+
+  async logout(tokenFamily: string) {
+    await this.sessionsService.revokeTokenFamily(tokenFamily);
   }
 }

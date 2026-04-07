@@ -38,4 +38,4 @@ export const sessions = pgTable(
     index('sessions_family_token_idx').on(table.tokenFamily),
   ],
 );
-export type Sessions = typeof sessions.$inferSelect;
+export type SessionsType = typeof sessions.$inferSelect;

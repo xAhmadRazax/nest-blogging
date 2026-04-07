@@ -21,8 +21,9 @@ export class UsersService {
 
     return this.sanitize(user);
   }
-  async findOne(id: string) {
-    const [user] = await this.db
+  async findOne(id: string, tx?: Transaction) {
+    const queryBuilder = tx ? tx : this.db;
+    const [user] = await queryBuilder
       .select()
       .from(users)
       .where(eq(users.id, id))
