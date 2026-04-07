@@ -85,10 +85,6 @@ export class SessionService {
     return updatedSession;
   }
 
-  async something() {
-    // check if token is valid
-  }
-
   async findByToken(filters?: SQL, tx?: Transaction) {
     const queryBuilder = tx ? tx : this.db;
     const [session] = await queryBuilder.select().from(sessions).where(filters);

@@ -176,7 +176,7 @@ export class AuthService {
     context: { baseUrl: string },
   ) {
     const user = await this.userService.findOneByEmail(email);
-    if (!user.id) {
+    if (!user) {
       return;
     }
 

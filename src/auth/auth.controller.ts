@@ -10,6 +10,7 @@ import {
   Res,
   BadRequestException,
   Get,
+  Headers,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
@@ -44,7 +45,9 @@ export class AuthController {
   @Post('/login')
   @HttpCode(200)
   async login(
-    @Res({ passthrough: true }) res: Response,
+    @Headers('x-client-type') clientType: string,
+    @Res({ passthrough: true })
+    res: Response,
     @Req() req: Request,
     @UserMeta() meta: TypeUserMeta,
     @Body() loginUserDto: LoginUserDto,
@@ -55,9 +58,14 @@ export class AuthController {
       { url: req.url },
     );
 
-    res.cookie('accessToken', accessToken, accessTokenCookieOptions);
-    res.cookie('refreshToken', refreshToken, refreshTokenCookieOptions);
+    if (clientType !== 'mobile') {
+      res.cookie('accessToken', accessToken, accessTokenCookieOptions);
+      res.cookie('refreshToken', refreshToken, refreshTokenCookieOptions);
+      return { user };
+    }
+
     return { user, accessToken, refreshToken };
+
     // user response
     /*{
   accessToken: "jwt-token",
@@ -89,6 +97,7 @@ export class AuthController {
   @UseGuards(AuthGuard)
   @UseGuards(RefreshGuard)
   async changePassword(
+    @Headers('x-client-type') clientType: string,
     @Res({ passthrough: true }) res: Response,
     @Req() req: Request,
     @CurrentUser() user: User,
@@ -116,9 +125,10 @@ export class AuthController {
       clearCookies,
     );
 
-    res.cookie('accessToken', accessToken, accessTokenCookieOptions);
-    res.cookie('refreshToken', refreshToken, refreshTokenCookieOptions);
-
+    if (clientType !== 'mobile') {
+      res.cookie('accessToken', accessToken, accessTokenCookieOptions);
+      res.cookie('refreshToken', refreshToken, refreshTokenCookieOptions);
+    }
     return { accessToken, refreshToken };
   }
 
@@ -175,6 +185,7 @@ export class AuthController {
   @Post('/refresh-token')
   @UseGuards(RefreshGuard)
   async refreshToken(
+    @Headers('x-client-type') clientType: string,
     @Res({ passthrough: true }) res: Response,
     @UserMeta() meta: TypeUserMeta,
     @CurrentSession()
@@ -197,23 +208,33 @@ export class AuthController {
         },
         clearCookies,
       );
-    res.cookie('accessToken', accessToken, accessTokenCookieOptions);
-    res.cookie('refreshToken', refreshToken, refreshTokenCookieOptions);
+
+    if (clientType !== 'mobile') {
+      res.cookie('accessToken', accessToken, accessTokenCookieOptions);
+      res.cookie('refreshToken', refreshToken, refreshTokenCookieOptions);
+    }
     return { accessToken, refreshToken };
   }
 
   @Post('/logout')
-  @UseGuards(RefreshGuard)
   @HttpCode(204)
   async logout(
+    @Headers('x-client-type') clientType: string,
+    @Req() req: Request,
     @Res({ passthrough: true })
     res: Response,
-    @CurrentSession()
-    sessions: {
-      selector: string;
-    },
+    @Body() refreshToken?: string,
   ) {
-    await this.authService.logout(sessions.selector);
+    const token =
+      clientType === 'mobile'
+        ? refreshToken
+        : (req.cookies['refreshToken'] as string);
+
+    if (token) {
+      const [selector] = token.split('.');
+      await this.authService.logout(selector);
+    }
+
     res.clearCookie('accessToken', accessTokenCookieOptions);
     res.clearCookie('refreshToken', refreshTokenCookieOptions);
   }
