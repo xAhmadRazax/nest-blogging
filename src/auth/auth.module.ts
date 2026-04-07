@@ -9,6 +9,8 @@ import { TokenService } from './token.service';
 import { HashingService } from './hashing.service';
 import { SessionService } from './session.service';
 import { PasswordResetsService } from './password-resets.service';
+import { EmailModule } from 'src/email/email.module';
+import { EmailVerificationsService } from './email-verification.service';
 
 @Module({
   imports: [
@@ -20,6 +22,7 @@ import { PasswordResetsService } from './password-resets.service';
       }),
     }),
     UsersModule,
+    EmailModule,
   ],
   providers: [
     AuthService,
@@ -27,6 +30,7 @@ import { PasswordResetsService } from './password-resets.service';
     HashingService,
     SessionService,
     PasswordResetsService,
+    EmailVerificationsService,
     TypeConfigService,
     Logger,
   ],

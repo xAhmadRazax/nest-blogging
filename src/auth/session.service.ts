@@ -1,4 +1,4 @@
-import { Logger, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import type { DB } from 'src/db/client';
 import { InjectDb } from 'src/db/db.provider';
 import { sessions } from './schemas/sessions.schema';
@@ -7,6 +7,7 @@ import ms from 'ms';
 import { TypeUserMeta } from './types/auth.type';
 import { and, eq } from 'drizzle-orm';
 
+@Injectable()
 export class SessionService {
   constructor(
     @InjectDb() private readonly db: DB,

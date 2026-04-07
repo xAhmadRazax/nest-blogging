@@ -20,12 +20,14 @@ import { appConfigSchema } from './config/config.types';
 import { JwtExceptionFilter } from './filters/jwt.exception.filter';
 import { DrizzleExceptionFilter } from './filters/drizzle.exception.filter';
 import { ZodExceptionFilter } from './filters/zod.exception.filter';
+import { EmailModule } from './email/email.module';
+import { emailConfig } from './config/email.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [jwtConfig],
+      load: [jwtConfig, emailConfig],
       validationSchema: appConfigSchema,
     }),
     DbModule,
@@ -45,6 +47,7 @@ import { ZodExceptionFilter } from './filters/zod.exception.filter';
     BlogsModule,
     TenantsModule,
     RolesModule,
+    EmailModule,
   ],
   controllers: [AppController],
   providers: [

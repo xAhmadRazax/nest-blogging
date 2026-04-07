@@ -3,6 +3,7 @@ import { HashingService } from './hashing.service';
 import { JwtService } from '@nestjs/jwt';
 import { JwtPayload } from 'jsonwebtoken';
 import { PayloadType } from 'src/common/types/jwtPayload';
+
 @Injectable()
 export class TokenService {
   constructor(

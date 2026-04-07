@@ -34,8 +34,10 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('/register')
-  register(@Body() registerUserDto: RegisterUserDto) {
-    return this.authService.register(registerUserDto);
+  register(@Req() req: Request, @Body() registerUserDto: RegisterUserDto) {
+    return this.authService.register(registerUserDto, {
+      url: `${req.protocol}://${req.get('host')}/api/v1/email-verification`,
+    });
   }
 
   @Post('/login')
@@ -105,36 +107,26 @@ export class AuthController {
   }
 
   @Post('/forgot-password')
-  @HttpCode(200)
+  @HttpCode(204)
   async forgotPassword(
     @Req() req: Request,
     @Body() forgotPasswordDto: ForgotPasswordDto,
   ) {
-    const forgotPasswordRes =
-      await this.authService.forgotPassword(forgotPasswordDto);
+    const url = `${req.protocol}://${req.get('host')}/api/v1/auth/password-resets/`;
 
-    if (!forgotPasswordRes) {
-      return;
-    }
-    const url = `${req.protocol}://${req.get('host')}/api/v1/auth/password-rests/${forgotPasswordRes.passwordResetToken}`;
-
-    return {
-      passwordResetUrl: url,
-      validUpto: forgotPasswordRes.tokenValidUpTo,
-      maxLivedTime: forgotPasswordRes.livedTime,
-    };
+    await this.authService.forgotPassword(forgotPasswordDto, { baseUrl: url });
   }
 
-  @Get('/verify-password-rests-token/:token')
-  @HttpCode(204)
+  @Get('/password-resets/:token')
   async verifyPasswordResetsToken(
     @Req() req: Request,
     @Param('token') token: string,
   ) {
     await this.authService.verifyPasswordRestsToken(token, { url: req.url });
+    return { message: 'Password resets token is valid' };
   }
 
-  @Patch('/password-rests/:token')
+  @Patch('/password-resets/:token')
   @HttpCode(204)
   async passwordRests(
     @Req() req: Request,
@@ -149,8 +141,20 @@ export class AuthController {
     });
   }
 
-  @Patch('/password-verify')
-  verifyEmail() {}
+  @Post('/email-verification')
+  @UseGuards(AuthGuard)
+  @HttpCode(204)
+  async emailVerification(@Req() req: Request, @CurrentUser() user: User) {
+    await this.authService.sendVerifyEmail(user, {
+      url: `${req.protocol}://${req.get('host')}/api/v1/email-verification`,
+    });
+  }
+
+  @Patch('/email-verification/:token')
+  @HttpCode(204)
+  async verifyEmail(@Param('token') token: string) {
+    await this.authService.verifyEmail(token);
+  }
 
   @Delete(':id')
   remove() {}

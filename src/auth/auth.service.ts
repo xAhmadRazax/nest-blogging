@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   Logger,
   UnauthorizedException,
@@ -17,6 +18,8 @@ import { PasswordResetsService } from './password-resets.service';
 import { PasswordResetsDto } from './dto/password-resets.dto';
 import { InjectDb } from 'src/db/db.provider';
 import { type DB } from 'src/db/client';
+import { EmailVerificationsService } from './email-verification.service';
+import { PublicUser } from 'src/db/schema';
 
 @Injectable()
 export class AuthService {
@@ -27,10 +30,11 @@ export class AuthService {
     private readonly sessionsService: SessionService,
     private readonly hashingService: HashingService,
     private readonly passwordResetsService: PasswordResetsService,
+    private readonly emailVerificationService: EmailVerificationsService,
     private readonly logger: Logger,
   ) {}
 
-  async register(registerUserDto: RegisterUserDto) {
+  async register(registerUserDto: RegisterUserDto, context: { url: string }) {
     const hashedPassword = await this.hashingService.hashPassword(
       registerUserDto.password,
     );
@@ -38,6 +42,14 @@ export class AuthService {
       ...registerUserDto,
       hashedPassword,
     });
+
+    await this.emailVerificationService.sendWelcomeVerification({
+      userId: user.id,
+      email: user.email,
+      name: user.username,
+      url: context.url,
+    });
+
     this.logger.log(`A user with ${user.email} has been registered`);
     return user;
   }
@@ -142,17 +154,21 @@ export class AuthService {
     };
   }
 
-  async forgotPassword({ email }: ForgotPasswordDto) {
+  async forgotPassword(
+    { email }: ForgotPasswordDto,
+    context: { baseUrl: string },
+  ) {
     const user = await this.userService.findOneByEmail(email);
     if (!user.id) {
       return;
     }
 
-    const passwordResetsRes = await this.passwordResetsService.create({
+    await this.passwordResetsService.passwordResets({
       userId: user.id,
+      email: user.email,
+      name: user.username,
+      url: context.baseUrl,
     });
-
-    return passwordResetsRes;
   }
 
   async verifyPasswordRestsToken(token: string, context: { url: string }) {
@@ -205,6 +221,36 @@ export class AuthService {
       await this.passwordResetsService.update(hashedToken);
 
       return this.userService.sanitize(user);
+    });
+  }
+
+  async sendVerifyEmail(user: PublicUser, context: { url: string }) {
+    if (user.isVerified) {
+      throw new ConflictException('User is already verified');
+    }
+
+    await this.emailVerificationService.sendEmailVerification({
+      userId: user.id,
+      email: user.email,
+      name: user.username,
+      url: context.url,
+    });
+  }
+
+  async verifyEmail(token: string) {
+    await this.db.transaction(async (tx) => {
+      const emailVerificationRecord = await this.emailVerificationService.find(
+        token,
+        tx,
+      );
+      await this.userService.update(
+        emailVerificationRecord.userId,
+        {
+          isVerified: true,
+        },
+        tx,
+      );
+      await this.emailVerificationService.verifyEmail(token, tx);
     });
   }
 }
