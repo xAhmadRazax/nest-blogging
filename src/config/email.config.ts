@@ -12,3 +12,18 @@ export const typeOrmConfig = registerAs(
     synchronize: Boolean(process.env.DB_SYNC ?? false),
   }),
 );
+
+export interface EmailConfig {
+  apiKey: string;
+  fromAddress: string;
+  fromName: string;
+}
+
+export const emailConfig = registerAs(
+  'email',
+  (): EmailConfig => ({
+    apiKey: process.env.EMAIL_API_KEY!,
+    fromAddress: process.env.EMAIL_FROM_ADDRESS!,
+    fromName: process.env.EMAIL_FROM_NAME!,
+  }),
+);

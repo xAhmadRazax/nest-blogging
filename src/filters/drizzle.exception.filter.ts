@@ -31,7 +31,7 @@ export class DrizzleExceptionFilter implements ExceptionFilter {
       errors: [],
       timestamp: new Date().toISOString(),
     };
-
+    console.log(exception);
     switch (exception.cause.code) {
       case '23505': {
         const match = exception.cause.detail.match(
