@@ -6,6 +6,7 @@ import {
   Param,
   UseGuards,
   Patch,
+  Delete,
 } from '@nestjs/common';
 import { PublicationsService } from './publications.service';
 import { CreatePublicationDto } from './dto/create-publication.dto';
@@ -54,5 +55,12 @@ export class PublicationsController {
     );
 
     return record;
+  }
+
+  @Delete('/:id')
+  @UseGuards(AuthGuard, IsUserVerifiedGuard, PermissionGuard)
+  @RequirePermission('publication:update')
+  async delete(@Param('id') id: string) {
+    await this.publicationsService.delete(id);
   }
 }

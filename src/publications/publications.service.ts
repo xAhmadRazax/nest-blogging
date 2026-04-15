@@ -8,7 +8,7 @@ import { PermissionsService } from './permissions.service';
 import { publications } from './schemas/publication.schema';
 import { DEFAULT_ROLES } from './constants/publications.constant';
 import { MembershipService } from './membership.service';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { UpdatePublicationDto } from './dto/update-publication.dto';
 import { PublicationsHistoryService } from './publicationsHistory.service';
 
@@ -115,7 +115,7 @@ export class PublicationsService {
   async findOne(slug: string, tx?: Transaction) {
     const queryBuilder = tx ?? this.db;
     const publicationRecord = await queryBuilder.query.publications.findFirst({
-      where: eq(publications.slug, slug),
+      where: and(eq(publications.slug, slug), isNull(publications.deletedAt)),
       with: { posts: true, roles: true, members: { with: { role: true } } },
     });
 
@@ -155,6 +155,13 @@ export class PublicationsService {
 
       return res;
     });
+  }
+
+  async delete(publicationId: string) {
+    await this.db
+      .update(publications)
+      .set({ deletedAt: new Date() })
+      .where(eq(publications.id, publicationId));
   }
   private slugify(title: string) {
     return slugify(title);
