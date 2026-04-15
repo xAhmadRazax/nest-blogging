@@ -8,7 +8,7 @@ POST {{baseUrl}}/auth/register
 Content-Type:{{content-type}}
 
 {
-    "email":"muhammad.ahmad.raza789@gmail.com",
+    "email":"muhammada.ahmad.raza789@gmail.com",
     "username":"AhmadRaza",
     "password":"Fake123*"
 }
@@ -68,7 +68,7 @@ POST {{baseUrl}}/auth/email-verification
 
 ### verify user email
 # @name verifyEmail
-PATCH {{baseUrl}}/auth/email-verification/27d0402957a37987425f70cf392262788322cbfb7e111e1918d19d51a7c58e2d
+PATCH {{baseUrl}}/auth/email-verification/7a290ca9c812606117a64a434fe2cc34bd93bea2c928087650bcb93d0cd71698
 
 
 ### refreshToken
@@ -81,3 +81,35 @@ POST  {{baseUrl}}/auth/refresh-token
 # @name logout
 
 Post {{baseUrl}}/auth/logout
+
+
+# publications
+
+###
+# create Publications
+# @name createPublications
+Post {{baseUrl}}/publications
+Content-Type:{{content-type}}
+
+{
+     "name":"Wild Guess",
+     "description":"haaaaaaaa gay"
+}
+
+###
+# get Publications
+# @name getPublications
+GET {{baseUrl}}/publications/Wild-Guess
+Content-Type:{{content-type}}
+
+
+###
+# update Publications
+# @name updatePublications
+PATCH {{baseUrl}}/publications/a0801fce-8231-4d2a-9151-64b87b6d048d
+Content-Type:{{content-type}}
+
+{
+     "name":"Wild Puppy1",
+     "description":"its been a long day"
+}

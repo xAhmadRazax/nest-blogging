@@ -52,19 +52,16 @@ export class AuthController {
     @UserMeta() meta: TypeUserMeta,
     @Body() loginUserDto: LoginUserDto,
   ) {
-    const { user, accessToken, refreshToken } = await this.authService.login(
-      meta,
-      loginUserDto,
-      { url: req.url },
-    );
+    const { user, publications, accessToken, refreshToken } =
+      await this.authService.login(meta, loginUserDto, { url: req.url });
 
     if (clientType !== 'mobile') {
       res.cookie('accessToken', accessToken, accessTokenCookieOptions);
       res.cookie('refreshToken', refreshToken, refreshTokenCookieOptions);
-      return { user };
+      return { user, publications };
     }
 
-    return { user, accessToken, refreshToken };
+    return { user, publications, accessToken, refreshToken };
 
     // user response
     /*{

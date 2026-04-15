@@ -18,7 +18,7 @@ export class TokenService {
 
   decodeJwtToken(token: string, verifyToken: boolean = true): PayloadType {
     if (verifyToken) {
-      this.verifyJwtToken(token);
+      return this.verifyJwtToken(token) as PayloadType;
     }
     return this.jwtService.decode<PayloadType>(token);
   }

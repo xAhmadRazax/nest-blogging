@@ -1,3 +1,4 @@
+import { relations } from 'drizzle-orm';
 import {
   uuid,
   varchar,
@@ -6,6 +7,7 @@ import {
   timestamp,
   pgTable,
 } from 'drizzle-orm/pg-core';
+import { memberships } from 'src/db/schema';
 
 export const users = pgTable('users', {
   id: uuid(`id`).defaultRandom().primaryKey(),
@@ -34,3 +36,7 @@ export const users = pgTable('users', {
 export type User = typeof users.$inferSelect;
 
 export type PublicUser = Omit<User, 'hashedPassword' | 'passwordChangedAt'>;
+
+export const usersRelations = relations(users, ({ many }) => ({
+  members: many(memberships),
+}));

@@ -19,7 +19,8 @@ import { PasswordResetsDto } from './dto/password-resets.dto';
 import { InjectDb } from 'src/db/db.provider';
 import { type DB } from 'src/db/client';
 import { EmailVerificationsService } from './email-verification.service';
-import { PublicUser } from 'src/db/schema';
+import { PublicUser, users } from 'src/db/schema';
+import { eq } from 'drizzle-orm';
 
 @Injectable()
 export class AuthService {
@@ -59,7 +60,9 @@ export class AuthService {
     loginUserDto: LoginUserDto,
     context: { url: string },
   ) {
-    const user = await this.userService.findOneByEmail(loginUserDto.email);
+    const user = await this.userService.findOneByFilters(
+      eq(users.email, loginUserDto.email),
+    );
     if (
       !user ||
       !(await this.hashingService.comparePassword(
@@ -76,7 +79,7 @@ export class AuthService {
     }
 
     // generate Session
-
+    console.log(user);
     const accessToken = this.tokenService.generateJwtToken({
       userId: user.id,
       email: user.email,
@@ -90,9 +93,9 @@ export class AuthService {
       tokenHash: hashedVerifier,
       userId: user.id,
     });
-
+    const formattedUser = this.userService.userWithPublicationAndRoles(user);
     return {
-      user: this.userService.sanitize(user),
+      ...formattedUser,
       accessToken,
       refreshToken: `${selector}.${verifier}`,
     };
@@ -175,7 +178,9 @@ export class AuthService {
     { email }: ForgotPasswordDto,
     context: { baseUrl: string },
   ) {
-    const user = await this.userService.findOneByEmail(email);
+    const user = await this.userService.findOneByFilters(
+      eq(users.email, email),
+    );
     if (!user) {
       return;
     }

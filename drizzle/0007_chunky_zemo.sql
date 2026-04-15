@@ -1,1 +1,0 @@
-ALTER TABLE "users" RENAME COLUMN "password_reset_at" TO "password_changed_at";

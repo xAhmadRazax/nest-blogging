@@ -35,5 +35,6 @@ import { EmailVerificationsService } from './email-verification.service';
     Logger,
   ],
   controllers: [AuthController],
+  exports: [AuthService, TokenService, HashingService],
 })
 export class AuthModule {}

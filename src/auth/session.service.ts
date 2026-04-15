@@ -29,7 +29,7 @@ export class SessionService {
     tx?: Transaction,
   ) {
     const queryBuilder = tx ? tx : this.db;
-    const session = await queryBuilder
+    const [session] = await queryBuilder
       .insert(sessions)
       .values({
         ...meta,

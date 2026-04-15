@@ -4,7 +4,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { InjectDb } from 'src/db/db.provider';
 import type { DB, Transaction } from 'src/db/client';
 import { PublicUser, User, users } from './schemas/users.schema';
-import { eq } from 'drizzle-orm';
+import { eq, SQL } from 'drizzle-orm';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
@@ -40,13 +40,24 @@ export class UsersService {
   //   return '';
   // }
 
-  async findOneByEmail(email: string) {
-    const [user] = await this.db
-      .select()
-      .from(users)
-      .where(eq(users.email, email))
-      .limit(1);
+  async findOneByFilters(filters: SQL) {
+    // const [user] = await this.db
+    //   .select()
+    //   .from(users)
+    //   .where(eq(users.email, email))
+    //   .limit(1);
 
+    const user = await this.db.query.users.findFirst({
+      where: filters,
+      with: {
+        members: {
+          with: {
+            role: { with: { rolePermissions: { with: { permission: true } } } },
+            publication: true,
+          },
+        },
+      },
+    });
     return user;
   }
 
@@ -66,9 +77,40 @@ export class UsersService {
   }
 
   sanitize(user: User): PublicUser {
-    const { hashedPassword, passwordChangedAt, ...publicUser } = user;
-    void hashedPassword;
-    void passwordChangedAt;
+    const {
+      hashedPassword: _hashedPassword,
+      passwordChangedAt: _passwordChangedAt,
+      ...publicUser
+    } = user;
     return publicUser;
+  }
+  userWithPublicationAndRoles(
+    user: Awaited<ReturnType<typeof this.findOneByFilters>>,
+  ) {
+    if (!user) return;
+
+    const publicationsWithRolesAndPermissions = user.members.map((member) => ({
+      id: member.publication.id,
+      name: member.publication.name,
+      role: member.role.name,
+      roleId: member.role.id,
+      permissions: member.role.rolePermissions.map(
+        (rp) => `${rp.permission.action}:${rp.permission.resource}`,
+      ),
+    }));
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        avatar: user.avatar,
+        isVerified: user.isVerified,
+        passwordChangedAt: user.passwordChangedAt,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
+      publications: publicationsWithRolesAndPermissions,
+    };
   }
 }

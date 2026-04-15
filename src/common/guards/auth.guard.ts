@@ -32,7 +32,7 @@ export class AuthGuard implements CanActivate {
       const payload = this.tokenService.decodeJwtToken(token);
       const user = await this.userService.findOne(payload.sub);
 
-      if (!user.id) {
+      if (!user) {
         this.logger.error({
           event: 'USER_NOT_FOUND',
           email: payload.email,

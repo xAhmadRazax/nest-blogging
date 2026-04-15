@@ -5,64 +5,29 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1774727872850,
-      "tag": "0000_third_iceman",
+      "when": 1775947996251,
+      "tag": "0000_jazzy_thunderbolts",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1774737213468,
-      "tag": "0001_old_angel",
+      "when": 1776083386693,
+      "tag": "0001_long_reaper",
       "breakpoints": true
     },
     {
       "idx": 2,
       "version": "7",
-      "when": 1774911913190,
-      "tag": "0002_absurd_midnight",
+      "when": 1776290057871,
+      "tag": "0002_amused_zzzax",
       "breakpoints": true
     },
     {
       "idx": 3,
       "version": "7",
-      "when": 1774912364252,
-      "tag": "0003_daily_exiles",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1774954705813,
-      "tag": "0004_futuristic_starjammers",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1774961023346,
-      "tag": "0005_chemical_rhino",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1774978950184,
-      "tag": "0006_mushy_orphan",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1775135326558,
-      "tag": "0007_chunky_zemo",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1775254717440,
-      "tag": "0008_sweet_retro_girl",
+      "when": 1776290064532,
+      "tag": "0003_rich_jackal",
       "breakpoints": true
     }
   ]
