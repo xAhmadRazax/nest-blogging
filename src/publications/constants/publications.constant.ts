@@ -1,3 +1,5 @@
+import { PermissionType } from '../schemas/permissions.schema';
+
 export const DEFAULT_PERMISSION_ACTIONS = [
   'create',
   'update',
@@ -5,6 +7,7 @@ export const DEFAULT_PERMISSION_ACTIONS = [
   'publish',
   'invite',
   'remove',
+  'rollback',
 ] as const;
 export const DEFAULT_PERMISSION_RESOURCE = [
   'publication',
@@ -13,10 +16,11 @@ export const DEFAULT_PERMISSION_RESOURCE = [
   'member',
 ] as const;
 
-export const DEFAULT_PERMISSIONS = [
+export const DEFAULT_PERMISSIONS: PermissionType[] = [
   // publications
   { resource: 'publication', action: 'update' },
   { resource: 'publication', action: 'delete' },
+  { resource: 'publication', action: 'rollback' },
 
   // posts
   { resource: 'post', action: 'create' },
@@ -38,16 +42,6 @@ export const DEFAULT_PERMISSIONS = [
 export const DEFAULT_ROLES = [
   {
     name: 'Owner',
-    // permissions: [
-    //   'post:create',
-    //   'post:update',
-    //   'post:delete',
-    //   'post:publish',
-    //   'comment:delete',
-    //   'member:invite',
-    //   'member:remove',
-    //   'member:update',
-    // ],
     permissions: 'all',
   },
   {

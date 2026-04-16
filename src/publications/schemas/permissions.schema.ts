@@ -18,3 +18,5 @@ export const permissions = pgTable('permissions', {
 export const permissionsRelations = relations(permissions, ({ many }) => ({
   rolesPermissions: many(rolesPermissions),
 }));
+
+export type PermissionType = typeof permissions.$inferInsert;

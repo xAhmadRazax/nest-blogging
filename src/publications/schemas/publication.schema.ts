@@ -8,7 +8,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { integer } from 'drizzle-orm/pg-core';
 import { pgTable } from 'drizzle-orm/pg-core';
-import { memberships, roles, users } from 'src/db/schema';
+import { memberships, publicationVersions, roles, users } from 'src/db/schema';
 import { posts } from 'src/posts/schemas/post.schema';
 
 export const publications = pgTable('publications', {
@@ -22,7 +22,7 @@ export const publications = pgTable('publications', {
     .references((): AnyPgColumn => users.id)
     .notNull(),
 
-  version: integer('version').default(1),
+  version: integer('version').default(1).notNull(),
   createdAt: timestamp('created_at', {
     withTimezone: true,
     mode: 'date',
@@ -42,4 +42,5 @@ export const publicationsRelations = relations(publications, ({ many }) => ({
   posts: many(posts),
   members: many(memberships),
   roles: many(roles),
+  publicationVersions: many(publicationVersions),
 }));

@@ -6,8 +6,9 @@ import { text } from 'drizzle-orm/pg-core';
 import { integer } from 'drizzle-orm/pg-core';
 import { timestamp } from 'drizzle-orm/pg-core';
 import { users } from 'src/db/schema';
+import { relations } from 'drizzle-orm';
 
-export const publicationsHistory = pgTable('publications_history', {
+export const publicationVersions = pgTable('publication_versions', {
   id: uuid('id').defaultRandom().primaryKey(),
   // Reference to the actual publication
   publicationId: uuid('publication_id')
@@ -26,3 +27,13 @@ export const publicationsHistory = pgTable('publications_history', {
   changeReason: text('change_reason'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
+
+export const publicationsHistoryRelations = relations(
+  publicationVersions,
+  ({ one }) => ({
+    publicationVersions: one(publications, {
+      fields: [publicationVersions.publicationId],
+      references: [publications.id],
+    }),
+  }),
+);

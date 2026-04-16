@@ -29,6 +29,20 @@
       "when": 1776290064532,
       "tag": "0003_rich_jackal",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1776344236307,
+      "tag": "0004_curly_cyclops",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1776375765848,
+      "tag": "0005_furry_lethal_legion",
+      "breakpoints": true
     }
   ]
 }

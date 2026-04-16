@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreatePublicationDto } from './dto/create-publication.dto';
 import { Transaction, type DB } from 'src/db/client';
 import { InjectDb } from 'src/db/db.provider';
@@ -10,7 +10,7 @@ import { DEFAULT_ROLES } from './constants/publications.constant';
 import { MembershipService } from './membership.service';
 import { and, eq, isNull } from 'drizzle-orm';
 import { UpdatePublicationDto } from './dto/update-publication.dto';
-import { PublicationsHistoryService } from './publicationsHistory.service';
+import { PublicationVersionsService } from './publicationVersions.service';
 
 @Injectable()
 export class PublicationsService {
@@ -18,7 +18,7 @@ export class PublicationsService {
     @InjectDb() private readonly db: DB,
     private readonly rolesService: RolesService,
     private readonly permissionsService: PermissionsService,
-    private readonly publicationsHistoryService: PublicationsHistoryService,
+    private readonly publicationVersionsService: PublicationVersionsService,
     private readonly membershipService: MembershipService,
   ) {}
 
@@ -131,23 +131,35 @@ export class PublicationsService {
       const [publication] = await tx
         .select()
         .from(publications)
-        .where(eq(publications.id, publicationId));
+        .where(
+          and(
+            eq(publications.id, publicationId),
+            isNull(publications.deletedAt),
+          ),
+        );
 
-      console.log(publication.version);
+      if (!publication) {
+        throw new NotFoundException(
+          `Publication with ${publicationId} doesn't exist`,
+        );
+      }
 
-      await this.publicationsHistoryService.create({
+      await this.publicationVersionsService.create({
         name: publication.name,
         description: publication.description,
         logo: publication.logo,
         publicationId: publication.id,
         slug: publication.slug,
         createdBy: userId,
-        version: (publication.version ?? 0) + 1,
+        version: publication.version,
       });
       const [res] = await this.db
         .update(publications)
         .set({
           ...updatePublicationDto,
+          slug: updatePublicationDto.name
+            ? this.slugify(updatePublicationDto.name)
+            : publication.slug,
           version: (publication.version ?? 0) + 1,
         })
         .where(eq(publications.id, publicationId))
@@ -163,6 +175,69 @@ export class PublicationsService {
       .set({ deletedAt: new Date() })
       .where(eq(publications.id, publicationId));
   }
+
+  async findAllVersions(id: string) {
+    return await this.publicationVersionsService.find(id);
+  }
+
+  async rollBackPublication({
+    publicationId,
+    userId,
+    versionId,
+  }: {
+    userId: string;
+    publicationId: string;
+    versionId: string;
+  }) {
+    return await this.db.transaction(async (tx) => {
+      const rollBack = await this.publicationVersionsService.findOne(
+        publicationId,
+        versionId,
+      );
+      if (!rollBack)
+        throw new NotFoundException('no roll back found with this id');
+
+      const activePublication = await tx.query.publications.findFirst({
+        where: and(
+          eq(publications.id, publicationId),
+          isNull(publications.deletedAt),
+        ),
+      });
+
+      if (!activePublication) {
+        throw new NotFoundException(
+          `Publication with ${publicationId} doesn't exist`,
+        );
+      }
+
+      //  updating and creating rollback
+
+      await this.publicationVersionsService.create({
+        name: activePublication.name,
+        description: activePublication.description,
+        logo: activePublication.logo,
+        publicationId: activePublication.id,
+        slug: activePublication.slug,
+        createdBy: userId,
+        version: activePublication.version,
+      });
+
+      const [res] = await this.db
+        .update(publications)
+        .set({
+          name: rollBack.name,
+          description: rollBack.description,
+          logo: rollBack.logo,
+          slug: rollBack.slug,
+          version: activePublication.version + 1,
+        })
+        .where(eq(publications.id, publicationId))
+        .returning();
+
+      return res;
+    });
+  }
+
   private slugify(title: string) {
     return slugify(title);
   }

@@ -93,7 +93,7 @@ Content-Type:{{content-type}}
 
 {
      "name":"Wild Guess",
-     "description":"haaaaaaaa gay"
+     "description":"just a wild guess"
 }
 
 ###
@@ -106,10 +106,22 @@ Content-Type:{{content-type}}
 ###
 # update Publications
 # @name updatePublications
-PATCH {{baseUrl}}/publications/a0801fce-8231-4d2a-9151-64b87b6d048d
+PATCH {{baseUrl}}/publications/813ea03a-f484-4982-b651-46d5fbb5cae8
 Content-Type:{{content-type}}
 
 {
-     "name":"Wild Puppy1",
-     "description":"its been a long day"
+     "description":"whats up brother ite me marios"
 }
+
+###
+# @name getAllVersionsOfPublciations
+GET {{baseUrl}}/publications/813ea03a-f484-4982-b651-46d5fbb5cae8/versions
+Content-Type:{{content-type}}
+
+
+
+### rollback to one of the previous version 
+# @name getAllVersionsOfPublciations
+PATCH {{baseUrl}}/publications/813ea03a-f484-4982-b651-46d5fbb5cae8/versions/1ef779ff-ffef-486f-8370-a466591e2e21
+Content-Type:{{content-type}}
+

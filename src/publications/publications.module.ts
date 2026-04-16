@@ -6,14 +6,14 @@ import { RolesService } from './roles.service';
 import { PermissionsService } from './permissions.service';
 import { AuthModule } from 'src/auth/auth.module';
 import { UsersModule } from 'src/users/users.module';
-import { PublicationsHistoryService } from './publicationsHistory.service';
+import { PublicationVersionsService } from './publicationVersions.service';
 
 @Module({
   imports: [AuthModule, UsersModule],
   controllers: [PublicationsController],
   providers: [
     PublicationsService,
-    PublicationsHistoryService,
+    PublicationVersionsService,
     MembershipService,
     RolesService,
     PermissionsService,

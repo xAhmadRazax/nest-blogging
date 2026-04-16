@@ -16,7 +16,7 @@ export class PermissionsService {
   }
 
   private async seedDefaultPermission() {
-    await this.db.insert(permissions).values([...DEFAULT_PERMISSIONS]);
-    console.log('default permission are seeded');
+    await this.db.insert(permissions).values(DEFAULT_PERMISSIONS);
+    console.log('permission seeded');
   }
 }

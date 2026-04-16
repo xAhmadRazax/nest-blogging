@@ -5,7 +5,7 @@ export * from '../auth/schemas/email-verification.schema';
 export * from '../publications/schemas/memberships.schema';
 export * from '../publications/schemas/permissions.schema';
 export * from '../publications/schemas/publication.schema';
-export * from '../publications/schemas/publication-history.schema';
+export * from '../publications/schemas/publication-versions.schema';
 export * from '../publications/schemas/roles-permissions.schema';
 export * from '../publications/schemas/roles.schema';
 export * from '../posts/schemas/post.schema';

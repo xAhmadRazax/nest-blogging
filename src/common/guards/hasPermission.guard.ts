@@ -3,14 +3,15 @@ import {
   ExecutionContext,
   ForbiddenException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { Request } from 'express';
 import { type DB } from 'src/db/client';
 import { InjectDb } from 'src/db/db.provider';
-import { memberships } from 'src/db/schema';
+import { memberships, publications } from 'src/db/schema';
 
 // common/guards/permission.guard.ts
 @Injectable()
@@ -30,9 +31,8 @@ export class PermissionGuard implements CanActivate {
     if (!required) return true;
 
     const req = context.switchToHttp().getRequest<Request>();
-    const publicationId = req.params.id;
-    console.log(req.params, publicationId);
-    console.log(publicationId);
+    const publicationId = req.params.id as string;
+
     const user = req.user;
 
     if (!user) {
@@ -40,11 +40,23 @@ export class PermissionGuard implements CanActivate {
         `Unauthorized access to ${req.protocol}://${req.get('host')}${req.url},  please login to access ${req.protocol}://${req.get('host')}${req.url}`,
       );
     }
+    const publication = await this.db.query.publications.findFirst({
+      where: and(
+        eq(publications.id, publicationId),
+        isNull(publications.deletedAt),
+      ),
+    });
+
+    if (!publication) {
+      throw new NotFoundException(
+        `Publication with ${publicationId} no longer exist`,
+      );
+    }
 
     const membersWithPublicationsAndRoles =
       await this.db.query.memberships.findFirst({
         where: and(
-          eq(memberships.publicationId, publicationId as string),
+          eq(memberships.publicationId, publicationId),
           eq(memberships.userId, user.id),
         ),
         with: {

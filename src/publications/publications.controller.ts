@@ -17,7 +17,6 @@ import { IsUserVerifiedGuard } from 'src/common/guards/is_user_verified.guard';
 import { PermissionGuard } from 'src/common/guards/hasPermission.guard';
 import { RequirePermission } from 'src/common/decorators/required-permission.decorator';
 import { UpdatePublicationDto } from './dto/update-publication.dto';
-import { userInfo } from 'os';
 
 @Controller('publications')
 export class PublicationsController {
@@ -30,7 +29,7 @@ export class PublicationsController {
     @Body()
     createPublicationDto: CreatePublicationDto,
   ) {
-    await this.publicationsService.create(user.id, createPublicationDto);
+    return await this.publicationsService.create(user.id, createPublicationDto);
   }
 
   @Get('/:slug')
@@ -59,8 +58,36 @@ export class PublicationsController {
 
   @Delete('/:id')
   @UseGuards(AuthGuard, IsUserVerifiedGuard, PermissionGuard)
-  @RequirePermission('publication:update')
+  @RequirePermission('publication:delete')
   async delete(@Param('id') id: string) {
     await this.publicationsService.delete(id);
+  }
+
+  //  PublicationHistory
+
+  @Get('/:id/versions')
+  @UseGuards(AuthGuard, IsUserVerifiedGuard, PermissionGuard)
+  @RequirePermission('publication:rollback')
+  async publicationVersions(@Param('id') id: string) {
+    console.log('????????????????');
+    const recs = await this.publicationsService.findAllVersions(id);
+
+    return { rollbacks: recs };
+  }
+
+  @Patch('/:id/versions/:versionId')
+  @UseGuards(AuthGuard, IsUserVerifiedGuard, PermissionGuard)
+  @RequirePermission('publication:rollback')
+  async revertPublication(
+    @CurrentUser() user: PublicUser,
+    @Param() params: { id: string; versionId: string },
+  ) {
+    const record = await this.publicationsService.rollBackPublication({
+      userId: user.id,
+      publicationId: params.id,
+      versionId: params.versionId,
+    });
+
+    return record;
   }
 }
