@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import argon2 from 'argon2';
 import { InternalServerErrorException } from '@nestjs/common';
 
-export class HashingService {
+export class TokenService {
   generateCryptoToken({
     generateUUID = false,
     byteLength = 32,
@@ -17,7 +17,7 @@ export class HashingService {
     return crypto.createHash('sha256').update(token).digest('hex');
   }
 
-  async hashPassword(password: string) {
+  async hashToken(password: string) {
     try {
       const hashedPassword = await argon2.hash(password);
       return hashedPassword;
@@ -25,7 +25,7 @@ export class HashingService {
       throw new InternalServerErrorException('Failed to hash password');
     }
   }
-  async comparePassword(candidatePassword: string, hashedPassword: string) {
+  async compareTokwn(candidatePassword: string, hashedPassword: string) {
     try {
       return await argon2.verify(hashedPassword, candidatePassword);
     } catch {

@@ -40,18 +40,6 @@ export class PermissionGuard implements CanActivate {
         `Unauthorized access to ${req.protocol}://${req.get('host')}${req.url},  please login to access ${req.protocol}://${req.get('host')}${req.url}`,
       );
     }
-    const publication = await this.db.query.publications.findFirst({
-      where: and(
-        eq(publications.id, publicationId),
-        isNull(publications.deletedAt),
-      ),
-    });
-
-    if (!publication) {
-      throw new NotFoundException(
-        `Publication with ${publicationId} no longer exist`,
-      );
-    }
 
     const membersWithPublicationsAndRoles =
       await this.db.query.memberships.findFirst({
@@ -60,6 +48,7 @@ export class PermissionGuard implements CanActivate {
           eq(memberships.userId, user.id),
         ),
         with: {
+          publication: true,
           role: { with: { rolePermissions: { with: { permission: true } } } },
         },
       });
@@ -68,6 +57,17 @@ export class PermissionGuard implements CanActivate {
       throw new ForbiddenException(
         'You do not have the permission to perform this actions',
       );
+    }
+
+    if (membersWithPublicationsAndRoles?.publication.deletedAt) {
+      throw new NotFoundException(
+        `Publication with ${publicationId} no longer exist`,
+      );
+    }
+
+    // bypassing the check for owner allowing him full access
+    if (membersWithPublicationsAndRoles.isOwner) {
+      return true;
     }
 
     const userPermissions = new Map(
@@ -79,42 +79,12 @@ export class PermissionGuard implements CanActivate {
       ),
     );
 
-    console.log(userPermissions);
-
     if (!userPermissions.has(required)) {
       throw new ForbiddenException(
         'You do not have the permission to perform this actions',
       );
     }
 
-    // check if owner first - owners bypass everything
-    // const membership = await this.db.query.memberships.findFirst({
-    //   where: and(
-    //     eq(memberships.userId, user.id),
-    //     eq(memberships.publicationId, publicationId),
-    //   ),
-    //   with: {
-    //     role: {
-    //       with: {
-    //         rolePermissions: {
-    //           with: { permission: true },
-    //         },
-    //       },
-    //     },
-    //   },
-    // });
-
-    // if (!membership) throw new ForbiddenException();
-    // if (membership.isOwner) return true; // owner can do everything
-
-    // // check if role has required permission
-    // const hasPermission = membership.role.rolePermissions.some(
-    //   (rp) =>
-    //     rp.permission.resource === required.resource &&
-    //     rp.permission.action === required.action,
-    // );
-
-    // if (!hasPermission) throw new ForbiddenException();
     return true;
   }
 }

@@ -8,10 +8,8 @@ import {
 import { RegisterUserDto } from './dto/register-user.dto';
 import { UsersService } from 'src/users/users.service';
 import { LoginUserDto } from './dto/login-user.dto';
-import { TokenService } from './token.service';
 import { TypeUserMeta } from './types/auth.type';
 import { SessionService } from './session.service';
-import { HashingService } from './hashing.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { PasswordResetsService } from './password-resets.service';
@@ -21,22 +19,24 @@ import { type DB } from 'src/db/client';
 import { EmailVerificationsService } from './email-verification.service';
 import { PublicUser, users } from 'src/db/schema';
 import { eq } from 'drizzle-orm';
+import { AuthTokenService } from './auth-token.service';
+import { TokenService } from 'src/common/services/token.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectDb() private readonly db: DB,
     private readonly userService: UsersService,
-    private readonly tokenService: TokenService,
+    private readonly authTokenService: AuthTokenService,
     private readonly sessionsService: SessionService,
-    private readonly hashingService: HashingService,
+    private readonly tokenService: TokenService,
     private readonly passwordResetsService: PasswordResetsService,
     private readonly emailVerificationService: EmailVerificationsService,
     private readonly logger: Logger,
   ) {}
 
   async register(registerUserDto: RegisterUserDto, context: { url: string }) {
-    const hashedPassword = await this.hashingService.hashPassword(
+    const hashedPassword = await this.tokenService.hashToken(
       registerUserDto.password,
     );
     const user = await this.userService.create({
@@ -65,7 +65,7 @@ export class AuthService {
     );
     if (
       !user ||
-      !(await this.hashingService.comparePassword(
+      !(await this.tokenService.compareTokwn(
         loginUserDto.password,
         user.hashedPassword,
       ))
@@ -80,12 +80,12 @@ export class AuthService {
 
     // generate Session
     console.log(user);
-    const accessToken = this.tokenService.generateJwtToken({
+    const accessToken = this.authTokenService.generateJwtToken({
       userId: user.id,
       email: user.email,
     });
     const { selector, verifier, hashedVerifier } =
-      this.tokenService.generateRefreshTokenPair();
+      this.authTokenService.generateRefreshTokenPair();
 
     await this.sessionsService.create({
       meta: userMeta,
@@ -114,7 +114,7 @@ export class AuthService {
 
       if (
         !user ||
-        !(await this.hashingService.comparePassword(
+        !(await this.tokenService.compareTokwn(
           changePasswordDto.password,
           user.hashedPassword,
         ))
@@ -136,7 +136,7 @@ export class AuthService {
         resetCookieHandler,
       );
 
-      const hashedPassword = await this.hashingService.hashPassword(
+      const hashedPassword = await this.tokenService.hashToken(
         changePasswordDto.newPassword,
       );
 
@@ -151,13 +151,13 @@ export class AuthService {
         tx,
       );
 
-      const accessToken = this.tokenService.generateJwtToken({
+      const accessToken = this.authTokenService.generateJwtToken({
         userId: user.id,
         email: user.email,
       });
 
       const { hashedVerifier, verifier } =
-        this.tokenService.generateRefreshTokenPair();
+        this.authTokenService.generateRefreshTokenPair();
 
       await this.sessionsService.sessionRotation({
         meta: userMeta,
@@ -194,7 +194,7 @@ export class AuthService {
   }
 
   async verifyPasswordRestsToken(token: string, context: { url: string }) {
-    const hashedToken = this.hashingService.encryptCryptoToken(token);
+    const hashedToken = this.tokenService.encryptCryptoToken(token);
     const passwordResetsRecord = await this.passwordResetsService.find({
       hashedToken,
     });
@@ -214,7 +214,7 @@ export class AuthService {
     context: { url: string },
   ) {
     await this.db.transaction(async (tx) => {
-      const hashedToken = this.hashingService.encryptCryptoToken(token);
+      const hashedToken = this.tokenService.encryptCryptoToken(token);
       const passwordResetsRecord = await this.passwordResetsService.find({
         transaction: tx,
         hashedToken,
@@ -228,7 +228,7 @@ export class AuthService {
         throw new BadRequestException('Token is invalid or has expired');
       }
 
-      const hashedPassword = await this.hashingService.hashPassword(
+      const hashedPassword = await this.tokenService.hashToken(
         passwordResetsDto.password,
       );
 
@@ -299,11 +299,12 @@ export class AuthService {
       );
 
       const user = await this.userService.findOne(session.userId, tx);
-      const accessToken = this.tokenService.generateJwtToken({
+      const accessToken = this.authTokenService.generateJwtToken({
         userId: user.id,
         email: user.email,
       });
-      const updatedTokenPairs = this.tokenService.generateRefreshTokenPair();
+      const updatedTokenPairs =
+        this.authTokenService.generateRefreshTokenPair();
 
       await this.sessionsService.sessionRotation({
         meta: userMeta,

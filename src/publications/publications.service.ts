@@ -122,6 +122,16 @@ export class PublicationsService {
     return publicationRecord;
   }
 
+  async findOneById(id: string, tx?: Transaction) {
+    const queryBuilder = tx ?? this.db;
+    const publicationRecord = await queryBuilder.query.publications.findFirst({
+      where: and(eq(publications.id, id), isNull(publications.deletedAt)),
+      with: { posts: true, roles: true, members: { with: { role: true } } },
+    });
+
+    return publicationRecord;
+  }
+
   async update(
     userId: string,
     publicationId: string,
@@ -144,16 +154,19 @@ export class PublicationsService {
         );
       }
 
-      await this.publicationVersionsService.create({
-        name: publication.name,
-        description: publication.description,
-        logo: publication.logo,
-        publicationId: publication.id,
-        slug: publication.slug,
-        createdBy: userId,
-        version: publication.version,
-      });
-      const [res] = await this.db
+      await this.publicationVersionsService.create(
+        {
+          name: publication.name,
+          description: publication.description,
+          logo: publication.logo,
+          publicationId: publication.id,
+          slug: publication.slug,
+          createdBy: userId,
+          version: publication.version,
+        },
+        tx,
+      );
+      const [res] = await tx
         .update(publications)
         .set({
           ...updatePublicationDto,

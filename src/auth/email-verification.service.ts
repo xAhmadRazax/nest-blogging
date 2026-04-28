@@ -1,18 +1,18 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Transaction, type DB } from 'src/db/client';
 import { InjectDb } from 'src/db/db.provider';
-import { HashingService } from './hashing.service';
 import { TypeConfigService } from 'src/config/type.config.service';
 import { emailVerifications } from './schemas/email-verification.schema';
 import ms from 'ms';
-import { EmailService } from 'src/email/email.service';
+import { EmailService } from 'src/common/services/email.service';
 import { and, eq, gt, isNull } from 'drizzle-orm';
+import { TokenService } from 'src/common/services/token.service';
 
 @Injectable()
 export class EmailVerificationsService {
   constructor(
     @InjectDb() private readonly db: DB,
-    private readonly hashingService: HashingService,
+    private readonly tokenService: TokenService,
     private readonly emailService: EmailService,
     private readonly configService: TypeConfigService,
     private readonly logger: Logger,
@@ -62,7 +62,7 @@ export class EmailVerificationsService {
 
   async verifyEmail(token: string, tx?: Transaction) {
     const queryBuilder = tx ? tx : this.db;
-    const hashedToken = this.hashingService.encryptCryptoToken(token);
+    const hashedToken = this.tokenService.encryptCryptoToken(token);
 
     await queryBuilder
       .update(emailVerifications)
@@ -72,7 +72,7 @@ export class EmailVerificationsService {
 
   async find(token: string, tx?: Transaction) {
     const queryBuilder = tx ? tx : this.db;
-    const hashedToken = this.hashingService.encryptCryptoToken(token);
+    const hashedToken = this.tokenService.encryptCryptoToken(token);
     const [verificationRec] = await queryBuilder
       .select()
       .from(emailVerifications)
@@ -91,8 +91,8 @@ export class EmailVerificationsService {
   }
 
   private async create({ userId }: { userId: string }) {
-    const token = this.hashingService.generateCryptoToken();
-    const hashedPassword = this.hashingService.encryptCryptoToken(token);
+    const token = this.tokenService.generateCryptoToken();
+    const hashedPassword = this.tokenService.encryptCryptoToken(token);
     const validUpTo = new Date(
       Date.now() +
         +ms(

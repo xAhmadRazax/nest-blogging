@@ -5,6 +5,7 @@ import { roles } from './schemas/roles.schema';
 import { InjectDb } from 'src/db/db.provider';
 import { CreateManyRoleDto } from './dto/create-many-roles';
 import { rolesPermissions } from './schemas/roles-permissions.schema';
+import { eq } from 'drizzle-orm';
 
 @Injectable()
 export class RolesService {
@@ -27,6 +28,14 @@ export class RolesService {
       .values(createManyRoleDto)
       .returning();
     return role;
+  }
+
+  async findOne(id: string, tx?: Transaction) {
+    const queryBuilder = tx ?? this.db;
+
+    return await queryBuilder.query.roles.findFirst({
+      where: eq(roles.id, id),
+    });
   }
 
   async assignPermissions(

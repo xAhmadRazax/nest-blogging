@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { HashingService } from './hashing.service';
 import { JwtService } from '@nestjs/jwt';
 import { JwtPayload } from 'jsonwebtoken';
+import { TokenService } from 'src/common/services/token.service';
 import { PayloadType } from 'src/common/types/jwtPayload';
 
 @Injectable()
-export class TokenService {
+export class AuthTokenService {
   constructor(
-    private readonly hashingService: HashingService,
+    private readonly hashingService: TokenService,
     private readonly jwtService: JwtService,
   ) {}
   generateJwtToken({ userId, email }: { userId: string; email: string }) {

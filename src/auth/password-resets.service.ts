@@ -4,15 +4,15 @@ import ms from 'ms';
 import { InjectDb } from 'src/db/db.provider';
 import { TypeConfigService } from 'src/config/type.config.service';
 import type { DB, Transaction } from 'src/db/client';
-import { HashingService } from './hashing.service';
 import { passwordResets } from './schemas/password-resets.schema';
-import { EmailService } from 'src/email/email.service';
+import { EmailService } from 'src/common/services/email.service';
+import { TokenService } from 'src/common/services/token.service';
 
 @Injectable()
 export class PasswordResetsService {
   constructor(
     @InjectDb() private readonly db: DB,
-    private readonly hashingService: HashingService,
+    private readonly tokenService: TokenService,
     private readonly emailService: EmailService,
     private readonly configService: TypeConfigService,
     private readonly logger: Logger,
@@ -69,9 +69,9 @@ export class PasswordResetsService {
   }
 
   private async create({ userId }: { userId: string }) {
-    const passwordResetToken = this.hashingService.generateCryptoToken();
+    const passwordResetToken = this.tokenService.generateCryptoToken();
     const hashedPasswordResetToken =
-      this.hashingService.encryptCryptoToken(passwordResetToken);
+      this.tokenService.encryptCryptoToken(passwordResetToken);
 
     const validUpTo = new Date(
       Date.now() +

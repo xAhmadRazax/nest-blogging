@@ -1,4 +1,4 @@
-export type AssignPermissionsParams = {
+export type CreateMembershipParams = {
   isOwner: boolean;
   roleId: string;
   userId: string;

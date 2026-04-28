@@ -1,10 +1,12 @@
 import Joi from 'joi';
 import { AuthConfig } from './auth.config';
 import { EmailConfig } from './email.config';
+import { CommonConfig } from './common.config';
 
 export interface ConfigType {
   auth: AuthConfig;
   email: EmailConfig;
+  common: CommonConfig;
 }
 
 export const appConfigSchema = Joi.object({
@@ -18,4 +20,5 @@ export const appConfigSchema = Joi.object({
   EMAIL_API_KEY: Joi.string().required(),
   EMAIL_FROM_ADDRESS: Joi.string().required(),
   EMAIL_FROM_NAME: Joi.string().required(),
+  MEMBER_INVITATION_EMAIL_EXPIRY: Joi.string().required(),
 });

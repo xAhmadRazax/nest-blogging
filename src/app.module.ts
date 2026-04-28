@@ -4,10 +4,8 @@ import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { BlogsModule } from './blogs/blogs.module';
-import { TenantsModule } from './tenants/tenants.module';
 import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
-// import { HttpExceptionFilter } from './filters/http.exception.filter';
 import { ConfigModule } from '@nestjs/config';
 import { jwtConfig } from './config/auth.config';
 import { DbModule } from './db/db.module';
@@ -19,7 +17,6 @@ import { appConfigSchema } from './config/config.types';
 import { JwtExceptionFilter } from './filters/jwt.exception.filter';
 import { DrizzleExceptionFilter } from './filters/drizzle.exception.filter';
 import { ZodExceptionFilter } from './filters/zod.exception.filter';
-import { EmailModule } from './email/email.module';
 import { emailConfig } from './config/email.config';
 import { PublicationsModule } from './publications/publications.module';
 import { PostsModule } from './posts/posts.module';
@@ -46,8 +43,6 @@ import { PostsModule } from './posts/posts.module';
     UsersModule,
     AuthModule,
     BlogsModule,
-    TenantsModule,
-    EmailModule,
     PublicationsModule,
     PostsModule,
   ],

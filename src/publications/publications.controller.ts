@@ -7,6 +7,7 @@ import {
   UseGuards,
   Patch,
   Delete,
+  HttpCode,
 } from '@nestjs/common';
 import { PublicationsService } from './publications.service';
 import { CreatePublicationDto } from './dto/create-publication.dto';
@@ -17,10 +18,15 @@ import { IsUserVerifiedGuard } from 'src/common/guards/is_user_verified.guard';
 import { PermissionGuard } from 'src/common/guards/hasPermission.guard';
 import { RequirePermission } from 'src/common/decorators/required-permission.decorator';
 import { UpdatePublicationDto } from './dto/update-publication.dto';
+import { MemberInvitationDto } from './dto/member-invitation.dto';
+import { MemberInvitationsService } from './member-invitations.service';
 
 @Controller('publications')
 export class PublicationsController {
-  constructor(private readonly publicationsService: PublicationsService) {}
+  constructor(
+    private readonly publicationsService: PublicationsService,
+    private readonly memberInvitationService: MemberInvitationsService,
+  ) {}
 
   @Post('/')
   @UseGuards(AuthGuard, IsUserVerifiedGuard)
@@ -89,5 +95,37 @@ export class PublicationsController {
     });
 
     return record;
+  }
+
+  //  memberships
+  @Post('/publications/:id/invitations')
+  @HttpCode(204)
+  @UseGuards(AuthGuard, IsUserVerifiedGuard, PermissionGuard)
+  @RequirePermission('member:invite')
+  async memberInvitations(
+    @CurrentUser() user: PublicUser,
+    @Param('id') { id }: { id: string },
+    memberInvitationDto: MemberInvitationDto,
+  ) {
+    await this.memberInvitationService.create({
+      invitedById: user.id,
+      publicationId: id,
+      roleId: memberInvitationDto.roleId,
+      userId: memberInvitationDto.userId,
+    });
+  }
+  @Get('/publications/:id/invitations')
+  @UseGuards(AuthGuard, IsUserVerifiedGuard, PermissionGuard)
+  @RequirePermission('member:invite')
+  async getAllPublicationsPendingInvitations(@Param() { id }: { id: string }) {
+    const invitationsRec = await this.memberInvitationService.findMany();
+  }
+
+  @Get('/publications/:id/invitations/:token')
+  @HttpCode(204)
+  async checkIsMemberInvitationValid(
+    @Param() { id, token }: { id: string; token: string },
+  ) {
+    await this.memberInvitationService.findOne(id, token);
   }
 }

@@ -5,12 +5,10 @@ import { UsersModule } from 'src/users/users.module';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { TypeConfigService } from 'src/config/type.config.service';
-import { TokenService } from './token.service';
-import { HashingService } from './hashing.service';
 import { SessionService } from './session.service';
 import { PasswordResetsService } from './password-resets.service';
-import { EmailModule } from 'src/email/email.module';
 import { EmailVerificationsService } from './email-verification.service';
+import { CommonModule } from 'src/common/modules/common.module';
 
 @Module({
   imports: [
@@ -22,12 +20,10 @@ import { EmailVerificationsService } from './email-verification.service';
       }),
     }),
     UsersModule,
-    EmailModule,
+    CommonModule,
   ],
   providers: [
     AuthService,
-    TokenService,
-    HashingService,
     SessionService,
     PasswordResetsService,
     EmailVerificationsService,
@@ -35,6 +31,6 @@ import { EmailVerificationsService } from './email-verification.service';
     Logger,
   ],
   controllers: [AuthController],
-  exports: [AuthService, TokenService, HashingService],
+  exports: [AuthService],
 })
 export class AuthModule {}

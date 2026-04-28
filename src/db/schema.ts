@@ -3,6 +3,7 @@ export * from '../auth/schemas/sessions.schema';
 export * from '../auth/schemas/password-resets.schema';
 export * from '../auth/schemas/email-verification.schema';
 export * from '../publications/schemas/memberships.schema';
+export * from '../publications/schemas/member-invitations.schema';
 export * from '../publications/schemas/permissions.schema';
 export * from '../publications/schemas/publication.schema';
 export * from '../publications/schemas/publication-versions.schema';
